@@ -614,11 +614,17 @@ function setStatus(system, state) {
 
 async function apiCall(url, action, data = {}) {
   if (!url) throw new Error('URL nie je nastavená');
-  const payload = encodeURIComponent(JSON.stringify({ action, ...data }));
-  const resp    = await fetch(url + '?payload=' + payload, { method: 'GET' });
-  const json    = await resp.json();
-  if (!json.ok) throw new Error(json.error || 'Chyba servera');
-  return json.data;
+  const payload    = encodeURIComponent(JSON.stringify({ action, ...data }));
+  const controller = new AbortController();
+  const timer      = setTimeout(() => controller.abort(), 15000); // 15s timeout
+  try {
+    const resp = await fetch(url + '?payload=' + payload, { method: 'GET', signal: controller.signal });
+    const json = await resp.json();
+    if (!json.ok) throw new Error(json.error || 'Chyba servera');
+    return json.data;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function loadAll() {
@@ -1636,22 +1642,25 @@ async function init() {
 
   if (sessionStorage.getItem('adminLoggedIn') === '1') {
     document.getElementById('view-admin').classList.add('active');
-    // Nastav URL do nastavení
     document.getElementById('cfg-servis-url').value = SERVIS_URL;
     document.getElementById('cfg-rental-url').value = RENTAL_URL;
-    await loadAll();
-    // Ukáž banner ak chýbajú URL
-    if (!SERVIS_URL || !RENTAL_URL) {
-      document.getElementById('overview-config-banner').style.display='block';
-    }
+    // Skry loading okamžite, dáta načítaj na pozadí
+    loadingEl.classList.add('hidden');
+    setTimeout(() => loadingEl.style.display = 'none', 400);
     renderOverviewCalendar();
     renderStats();
+    if (!SERVIS_URL || !RENTAL_URL) {
+      document.getElementById('overview-config-banner').style.display = 'block';
+    }
+    loadAll().then(() => {
+      renderOverviewCalendar();
+      renderStats();
+    });
   } else {
     document.getElementById('view-login').classList.add('active');
+    loadingEl.classList.add('hidden');
+    setTimeout(() => loadingEl.style.display = 'none', 400);
   }
-
-  loadingEl.classList.add('hidden');
-  setTimeout(()=>loadingEl.style.display='none', 400);
 }
 
 init();
