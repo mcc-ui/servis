@@ -177,6 +177,24 @@ tr:hover td { background:#fafafa; }
 .blocked-date-tag { display:inline-flex;align-items:center;gap:6px;background:#fee2e2;color:#991b1b;padding:3px 9px;border-radius:3px;font-size:.78rem;font-weight:600;margin:3px; }
 .blocked-date-tag button { background:none;border:none;cursor:pointer;color:#991b1b;font-size:.8rem;padding:0 2px; }
 
+/* ── TABS ── */
+.tab-bar { display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:20px; }
+.tab-btn { padding:8px 18px;font-size:.84rem;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s; }
+.tab-btn:hover { color:var(--dark); }
+.tab-btn.active { color:var(--accent);border-bottom-color:var(--accent); }
+.tab-pane { display:none; }
+.tab-pane.active { display:block; }
+
+/* ── SERVIS SLOT BADGES ── */
+.sl-badge { font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:3px;white-space:nowrap; }
+.sl-free  { background:#dcfce7;color:#15803d; }
+.sl-part  { background:#fef9c3;color:#854d0e; }
+.sl-full  { background:#fee2e2;color:#991b1b; }
+.sl-zero  { background:#f1f5f9;color:#64748b; }
+.sl-hol   { background:#e0e7ff;color:#3730a3; }
+.sl-blk   { background:#f1f5f9;color:#94a3b8; }
+.sl-over  { display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:3px;vertical-align:middle; }
+
 /* ── BIKES ADMIN ── */
 .bike-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:10px; }
 .bike-emoji { font-size:1.8rem;flex-shrink:0; }
@@ -301,20 +319,40 @@ tr:hover td { background:#fafafa; }
 
       <!-- ── PANEL: SERVIS ── -->
       <div class="admin-panel" id="panel-servis">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-          <div class="panel-title" style="margin:0">Servisné rezervácie</div>
-          <button class="btn btn-primary btn-sm" onclick="openServisModal(null)">+ Pridať</button>
+        <div class="tab-bar">
+          <button class="tab-btn active" id="stab-reservations" onclick="showServisTab('reservations',this)">Rezervácie</button>
+          <button class="tab-btn" id="stab-calendar" onclick="showServisTab('calendar',this)">Kalendár / sloty</button>
         </div>
-        <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th><th>Dátum</th><th>Zákazník</th><th>Kontakt</th><th>Bicykel</th><th>Popis</th><th></th>
-                </tr>
-              </thead>
-              <tbody id="servis-tbody"></tbody>
-            </table>
+
+        <!-- Tab: rezervácie -->
+        <div class="tab-pane active" id="stab-pane-reservations">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+            <button class="btn btn-primary btn-sm" onclick="openServisModal(null)">+ Pridať</button>
+          </div>
+          <div class="card">
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Dátum</th><th>Zákazník</th><th>Kontakt</th><th>Bicykel</th><th>Popis</th><th></th></tr></thead>
+                <tbody id="servis-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: kalendár slotov -->
+        <div class="tab-pane" id="stab-pane-calendar">
+          <div class="card">
+            <div class="cal-header">
+              <div class="cal-month-label" id="sc-cal-label"></div>
+              <div class="cal-nav">
+                <button onclick="scCalChange(-1)">‹</button>
+                <button onclick="scCalChange(1)">›</button>
+              </div>
+            </div>
+            <div class="cal-grid" id="sc-cal-grid"></div>
+          </div>
+          <div style="margin-top:10px;font-size:.78rem;color:var(--muted)">
+            Kliknite na pracovný deň pre nastavenie počtu dostupných slotov. Bodka <span class="sl-over"></span> označuje deň s individuálnym nastavením.
           </div>
         </div>
       </div>
@@ -465,6 +503,22 @@ tr:hover td { background:#fafafa; }
   </div>
 </div>
 
+<!-- Servis day slots modal -->
+<div class="overlay" id="overlay-sc-day">
+  <div class="modal" style="max-width:380px">
+    <button class="modal-close" onclick="closeOverlay('overlay-sc-day')">✕</button>
+    <div class="modal-title">Nastavenie slotov</div>
+    <div id="sc-day-label" style="font-size:.88rem;color:var(--muted);margin-bottom:18px"></div>
+    <div style="font-size:.84rem;font-weight:600;margin-bottom:10px">Počet dostupných slotov</div>
+    <div id="sc-day-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+    <div id="sc-day-info" style="font-size:.78rem;color:var(--muted);min-height:18px"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+      <button class="btn btn-ghost" onclick="closeOverlay('overlay-sc-day')">Zrušiť</button>
+      <button class="btn btn-primary" id="sc-day-save-btn" onclick="saveScDaySlots()">Uložiť</button>
+    </div>
+  </div>
+</div>
+
 <!-- Rental modal -->
 <div class="overlay" id="overlay-rental">
   <div class="modal">
@@ -532,6 +586,11 @@ let documents  = {};
 let editingServisId = null;
 let editingRentalId = null;
 let editingBikeId   = null;
+
+let scCalYear  = today.getFullYear();
+let scCalMonth = today.getMonth();
+let _scDayDate     = null;
+let _scDaySelected = null;
 
 const today    = new Date();
 const todayStr = ymd(today);
@@ -625,7 +684,7 @@ function showPanel(name, el) {
   if (el) el.classList.add('active');
   const titles = { overview:'Prehľad', servis:'Servis', rental:'Požičovňa', documents:'Dokumenty', emails:'E-maily', settings:'Nastavenia' };
   document.getElementById('topbar-title').textContent = titles[name] || '';
-  if (name === 'servis')    renderServisTable();
+  if (name === 'servis')    { renderServisTable(); renderScCal(); }
   if (name === 'rental')    renderRentalTable();
   if (name === 'documents') renderDocumentsEditor();
   if (name === 'settings')  renderSettingsPanel();
@@ -875,6 +934,182 @@ function showDayDetail(dtStr) {
   html += '</div>';
   document.getElementById('day-detail-wrap').innerHTML = html;
   document.getElementById('day-detail-wrap').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  SERVIS — TABS + KALENDÁR SLOTOV
+// ═══════════════════════════════════════════════════════════════════
+
+function showServisTab(name, el) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  document.getElementById('stab-pane-' + name).classList.add('active');
+  if (name === 'calendar') renderScCal();
+}
+
+function scCalChange(delta) {
+  scCalMonth += delta;
+  if (scCalMonth > 11) { scCalMonth = 0; scCalYear++; }
+  if (scCalMonth < 0)  { scCalMonth = 11; scCalYear--; }
+  renderScCal();
+}
+
+function scGetMaxSlots(dateStr) {
+  return (servisDayOverrides[dateStr] !== undefined) ? servisDayOverrides[dateStr] : servisSlotsPerDay;
+}
+function scGetUsed(dateStr) {
+  return servisRes.filter(r => r.datum === dateStr).length;
+}
+function scGetFree(dateStr) {
+  return Math.max(0, scGetMaxSlots(dateStr) - scGetUsed(dateStr));
+}
+
+function renderScCal() {
+  document.getElementById('sc-cal-label').textContent = MONTHS_SK[scCalMonth] + ' ' + scCalYear;
+  const grid = document.getElementById('sc-cal-grid');
+  grid.innerHTML = '';
+
+  const DAYS_SK = ['Po','Ut','St','Št','Pi','So','Ne'];
+  DAYS_SK.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow' + (i >= 5 ? ' weekend' : '');
+    el.textContent = d;
+    grid.appendChild(el);
+  });
+
+  const firstDay    = new Date(scCalYear, scCalMonth, 1);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  for (let i = 0; i < startOffset; i++) {
+    const el = document.createElement('div'); el.className = 'cal-cell empty'; grid.appendChild(el);
+  }
+
+  const daysInMonth = new Date(scCalYear, scCalMonth + 1, 0).getDate();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dtStr   = scCalYear + '-' + String(scCalMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const isWknd  = isWeekend(dtStr);
+    const isHol   = isHoliday(dtStr);
+    const isBlk   = servisBlocked.includes(dtStr);
+    const used    = scGetUsed(dtStr);
+    const maxSl   = scGetMaxSlots(dtStr);
+    const free    = scGetFree(dtStr);
+    const hasOver = servisDayOverrides[dtStr] !== undefined;
+    const isToday = dtStr === todayStr;
+
+    const el = document.createElement('div');
+    let cls = 'cal-cell';
+    if (isWknd)                         cls += ' weekend';
+    else if (isHol)                     cls += ' holiday';
+    else if (dtStr < todayStr)          cls += '';  // past — stále klikateľné v admin
+    if (isToday)                        cls += ' today';
+    el.className = cls;
+
+    if (!isWknd && !isHol) {
+      el.style.cursor = 'pointer';
+      el.title = 'Nastaviť sloty pre ' + dtStr;
+      el.onclick = () => openScDayModal(dtStr);
+    } else {
+      el.style.cursor = 'default';
+    }
+
+    const cn = document.createElement('div');
+    cn.className = 'cn';
+    cn.textContent = day;
+    if (hasOver) {
+      const dot = document.createElement('span');
+      dot.className = 'sl-over';
+      cn.appendChild(dot);
+    }
+    el.appendChild(cn);
+
+    if (!isWknd) {
+      const badge = document.createElement('div');
+      if (isHol) {
+        badge.className = 'sl-badge sl-hol'; badge.textContent = getHolidayName(dtStr);
+      } else if (isBlk) {
+        badge.className = 'sl-badge sl-blk'; badge.textContent = 'Zatv.';
+      } else if (maxSl === 0) {
+        badge.className = 'sl-badge sl-zero'; badge.textContent = '0 slotov';
+      } else if (free === 0) {
+        badge.className = 'sl-badge sl-full'; badge.textContent = used + '/' + maxSl;
+      } else if (used > 0) {
+        badge.className = 'sl-badge sl-part'; badge.textContent = used + '/' + maxSl;
+      } else {
+        badge.className = 'sl-badge sl-free'; badge.textContent = '0/' + maxSl;
+      }
+      el.appendChild(badge);
+    }
+    grid.appendChild(el);
+  }
+}
+
+function openScDayModal(dateStr) {
+  _scDayDate     = dateStr;
+  _scDaySelected = servisDayOverrides[dateStr] !== undefined ? servisDayOverrides[dateStr] : null;
+  document.getElementById('sc-day-label').textContent = fmtDateLong(dateStr);
+  _renderScDayBtns();
+  openOverlay('overlay-sc-day');
+}
+
+function _renderScDayBtns() {
+  const used      = scGetUsed(_scDayDate);
+  const container = document.getElementById('sc-day-btns');
+  container.innerHTML = '';
+
+  // Tlačidlo Štandard
+  const defBtn = document.createElement('button');
+  defBtn.className = 'btn btn-sm ' + (_scDaySelected === null ? 'btn-primary' : 'btn-ghost');
+  defBtn.style.cssText = 'min-width:60px;font-size:.8rem';
+  defBtn.textContent = 'Štandard (' + servisSlotsPerDay + ')';
+  defBtn.onclick = () => { _scDaySelected = null; _renderScDayBtns(); };
+  container.appendChild(defBtn);
+
+  // Čísla 0 … max
+  const maxShow = Math.max(servisSlotsPerDay + 2, 6);
+  for (let n = 0; n <= maxShow; n++) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm ' + (_scDaySelected === n ? 'btn-primary' : 'btn-ghost');
+    btn.style.cssText = 'min-width:40px;font-size:.85rem';
+    btn.textContent = n === 0 ? '0 ✕' : String(n);
+    if (n < used) { btn.disabled = true; btn.title = 'Nemožno — deň má ' + used + ' rezerv.'; }
+    const val = n;
+    btn.onclick = () => { _scDaySelected = val; _renderScDayBtns(); };
+    container.appendChild(btn);
+  }
+
+  // Info text
+  const info = document.getElementById('sc-day-info');
+  if (_scDaySelected === null) {
+    info.textContent = 'Použije sa globálne nastavenie (' + servisSlotsPerDay + ' slotov / deň).';
+  } else if (_scDaySelected === 0) {
+    info.textContent = 'Deň bude uzatvorený — žiadne nové rezervácie.';
+  } else {
+    const f = Math.max(0, _scDaySelected - used);
+    info.textContent = 'Celkom ' + _scDaySelected + ' slotov · ' + used + ' obsadené · ' + f + ' voľné.';
+  }
+}
+
+async function saveScDaySlots() {
+  if (!_scDayDate) return;
+  if (!SERVIS_URL) return alert('Nie je nastavené Servis API URL.');
+  const btn = document.getElementById('sc-day-save-btn');
+  btn.disabled = true; btn.textContent = 'Ukladám...';
+
+  const newOverrides = { ...servisDayOverrides };
+  if (_scDaySelected === null) {
+    delete newOverrides[_scDayDate];
+  } else {
+    newOverrides[_scDayDate] = _scDaySelected;
+  }
+
+  try {
+    await apiCall(SERVIS_URL, 'updateConfig', { config: { DAY_OVERRIDES: JSON.stringify(newOverrides) } });
+    servisDayOverrides = newOverrides;
+    closeOverlay('overlay-sc-day');
+    renderScCal();
+    renderOverviewCalendar();
+  } catch (e) { alert('Chyba: ' + e.message); }
+  finally { btn.disabled = false; btn.textContent = 'Uložiť'; }
 }
 
 // ═══════════════════════════════════════════════════════════════════
