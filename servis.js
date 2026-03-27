@@ -1,6 +1,6 @@
 (function () {
   // URL iframu — CDN odkaz na servis.html v GitHub repozitári
-  var SRC = 'https://cdn.jsdelivr.net/gh/mcc-ui/servis/servis.html?embed=1';
+  var SRC = 'https://mcc-ui.github.io/servis/servis.html?embed=1';
 
   // Wrapper div — vložíme hneď za tento <script> tag
   var script = document.currentScript;
