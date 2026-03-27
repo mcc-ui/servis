@@ -124,15 +124,17 @@ header .nav-btns { display: flex; gap: 8px; align-items: center; }
 .cal-day.today { background: #fff5f5; border-color: var(--accent); }
 .cal-day.weekend { background: #fafafa; opacity: 0.45; }
 .cal-day.blocked { background: #fafafa; opacity: 0.5; }
+.cal-day.holiday { background: #f0f4ff; opacity: 0.6; }
 .cal-day .day-num { font-size: 0.88rem; font-weight: 600; color: var(--dark); line-height: 1; }
-.cal-day.past .day-num, .cal-day.weekend .day-num { color: #bbb; }
+.cal-day.past .day-num, .cal-day.weekend .day-num, .cal-day.holiday .day-num { color: #bbb; }
 
 /* Slot badge */
 .slot-badge { font-size: 0.64rem; font-weight: 700; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
 .slot-badge.free-2 { background: #dcfce7; color: #15803d; }
 .slot-badge.free-1 { background: #fef9c3; color: #854d0e; }
 .slot-badge.free-0 { background: #fee2e2; color: #991b1b; }
-.slot-badge.closed { background: #f1f5f9; color: #94a3b8; }
+.slot-badge.closed   { background: #f1f5f9; color: #94a3b8; }
+.slot-badge.holiday  { background: #e0e7ff; color: #3730a3; }
 
 /* Legend */
 .legend { display: flex; gap: 14px; margin-top: 14px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
@@ -142,6 +144,7 @@ header .nav-btns { display: flex; gap: 8px; align-items: center; }
 .legend-dot.yellow { background: #eab308; }
 .legend-dot.red    { background: var(--red); }
 .legend-dot.gray   { background: #d1d5db; }
+.legend-dot.blue   { background: #6366f1; }
 
 /* ── OVERLAY & MODAL ── */
 .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; overflow-y: auto; padding: 32px 16px; }
@@ -324,6 +327,7 @@ body.embed .customer-wrap { padding-top: 16px; }
         <div class="legend-item"><div class="legend-dot yellow"></div> 1 voľný termín</div>
         <div class="legend-item"><div class="legend-dot red"></div> Obsadené</div>
         <div class="legend-item"><div class="legend-dot gray"></div> Víkend / zatvorené</div>
+        <div class="legend-item"><div class="legend-dot blue"></div> Štátny sviatok</div>
       </div>
     </div>
   </div>
@@ -724,6 +728,68 @@ function isWeekend(dateStr) {
   return dow === 0 || dow === 6;
 }
 
+// ─── Štátne sviatky SR ───────────────────────────────────────────
+
+function easterSunday(year) {
+  // Anonymný gregoriánsky algoritmus
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day   = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+
+function getSlovakHolidays(year) {
+  const holidays = {};
+  function add(month, day, name) {
+    const key = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+    holidays[key] = name;
+  }
+  // Pevné sviatky
+  add(1,  1,  'Deň vzniku SR');
+  add(1,  6,  'Traja králi');
+  add(5,  1,  'Sviatok práce');
+  add(5,  8,  'Deň víťazstva');
+  add(7,  5,  'Cyril a Metod');
+  add(8,  29, 'Výročie SNP');
+  add(9,  1,  'Deň Ústavy SR');
+  add(9,  15, 'Sedembolestná P. Mária');
+  add(11, 1,  'Sviatok všetkých svätých');
+  add(11, 17, 'Deň boja za slobodu');
+  add(12, 24, 'Štedrý deň');
+  add(12, 25, '1. sviatok vianočný');
+  add(12, 26, '2. sviatok vianočný');
+  // Pohyblivé sviatky (Veľká noc)
+  const easter = easterSunday(year);
+  const gf = new Date(easter); gf.setDate(easter.getDate() - 2); // Veľký piatok
+  const em = new Date(easter); em.setDate(easter.getDate() + 1); // Veľkonočný pondelok
+  [gf, em].forEach((d, i) => {
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    holidays[key] = i === 0 ? 'Veľký piatok' : 'Veľkonočný pondelok';
+  });
+  return holidays;
+}
+
+// Cache sviatkov podľa roku
+const _holidayCache = {};
+function getHolidaysForYear(year) {
+  if (!_holidayCache[year]) _holidayCache[year] = getSlovakHolidays(year);
+  return _holidayCache[year];
+}
+
+function getHolidayName(dateStr) {
+  const year = parseInt(dateStr.slice(0, 4));
+  return getHolidaysForYear(year)[dateStr] || null;
+}
+
+function isHoliday(dateStr) {
+  return !!getHolidayName(dateStr);
+}
+
 function isBlocked(dateStr) {
   return blockedDates.includes(dateStr);
 }
@@ -780,20 +846,22 @@ function renderCalendar() {
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const dtStr  = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-    const isPast = dtStr < todayStr;
-    const isWknd = isWeekend(dtStr);
-    const isBlk  = isBlocked(dtStr);
-    const free   = getFreeSlots(dtStr);
+    const dtStr   = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const isPast  = dtStr < todayStr;
+    const isWknd  = isWeekend(dtStr);
+    const isBlk   = isBlocked(dtStr);
+    const isHol   = isHoliday(dtStr);
+    const free    = getFreeSlots(dtStr);
     const isToday = dtStr === todayStr;
 
     const el = document.createElement('div');
     let cls = 'cal-day';
-    if (isPast)                             cls += ' past';
-    else if (isWknd)                        cls += ' weekend';
-    else if (isBlk || free === 0)           cls += ' full';
-    else                                    cls += ' available';
-    if (isToday && !isPast)                 cls += ' today';
+    if (isPast)                                    cls += ' past';
+    else if (isWknd)                               cls += ' weekend';
+    else if (isHol)                                cls += ' holiday';
+    else if (isBlk || free === 0)                  cls += ' full';
+    else                                           cls += ' available';
+    if (isToday && !isPast && !isHol)              cls += ' today';
     el.className = cls;
 
     const numEl = document.createElement('div');
@@ -804,7 +872,10 @@ function renderCalendar() {
     // Slot badge — len pre pracovné dni v budúcnosti
     if (!isPast && !isWknd) {
       const badge = document.createElement('div');
-      if (isBlk) {
+      if (isHol) {
+        badge.className = 'slot-badge holiday';
+        badge.textContent = getHolidayName(dtStr);
+      } else if (isBlk) {
         badge.className = 'slot-badge closed';
         badge.textContent = 'Zatvorené';
       } else if (free === 0) {
@@ -820,7 +891,7 @@ function renderCalendar() {
       el.appendChild(badge);
     }
 
-    if (!isPast && !isWknd && !isBlk && free > 0) {
+    if (!isPast && !isWknd && !isHol && !isBlk && free > 0) {
       el.onclick = () => openReservationModal(dtStr);
     }
     grid.appendChild(el);
@@ -1065,18 +1136,20 @@ function renderAdminCal() {
     const dtStr   = adminCalYear + '-' + String(adminCalMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
     const isWknd  = isWeekend(dtStr);
     const isBlk   = isBlocked(dtStr);
+    const isHol   = isHoliday(dtStr);
     const used    = getUsedSlots(dtStr);
     const maxSl   = getMaxSlots(dtStr);
     const free    = getFreeSlots(dtStr);
     const hasOver = dayOverrides[dtStr] !== undefined;
     const el      = document.createElement('div');
     let cls = 'cal-day';
-    if (isWknd)       cls += ' weekend';
-    else if (isBlk)   cls += ' blocked';
+    if (isWknd)                         cls += ' weekend';
+    else if (isHol)                     cls += ' holiday';
+    else if (isBlk)                     cls += ' blocked';
     else if (maxSl === 0 || free === 0) cls += ' full';
     el.className = cls;
 
-    if (!isWknd) {
+    if (!isWknd && !isHol) {
       el.style.cursor = 'pointer';
       el.title = 'Kliknite pre nastavenie slotov';
       el.onclick = () => openDaySettingsModal(dtStr);
@@ -1088,7 +1161,7 @@ function renderAdminCal() {
     numEl.className = 'day-num';
     numEl.textContent = day;
     // Malý indikátor overridu
-    if (hasOver) {
+    if (hasOver && !isHol) {
       const dot = document.createElement('span');
       dot.style.cssText = 'display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:3px;vertical-align:middle';
       numEl.appendChild(dot);
@@ -1097,7 +1170,10 @@ function renderAdminCal() {
 
     if (!isWknd) {
       const badge = document.createElement('div');
-      if (isBlk) {
+      if (isHol) {
+        badge.className = 'slot-badge holiday';
+        badge.textContent = getHolidayName(dtStr);
+      } else if (isBlk) {
         badge.className = 'slot-badge closed';
         badge.textContent = 'Zatv.';
       } else if (maxSl === 0) {
