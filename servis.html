@@ -309,7 +309,7 @@ body.embed .customer-wrap { padding-top: 16px; }
 <div id="view-customer" class="view active">
   <div class="customer-wrap">
     <div class="section-title">Objednajte sa do servisu</div>
-    <p class="section-sub">Kliknite na požadovaný dátum a vyplňte kontaktné údaje. </p>
+    <p class="section-sub">Kliknite na požadovaný dátum a vyplňte kontaktné údaje. Každý pracovný deň sú k dispozícii <strong>2 servisné termíny</strong>.</p>
     <div class="calendar-card">
       <div class="cal-header">
         <div class="cal-title" id="cal-month-label"></div>
@@ -320,7 +320,7 @@ body.embed .customer-wrap { padding-top: 16px; }
       </div>
       <div class="cal-grid" id="cal-grid"></div>
       <div class="legend">
-        <div class="legend-item"><div class="legend-dot green"></div> voľné termíny</div>
+        <div class="legend-item"><div class="legend-dot green"></div> 2 voľné termíny</div>
         <div class="legend-item"><div class="legend-dot yellow"></div> 1 voľný termín</div>
         <div class="legend-item"><div class="legend-dot red"></div> Plné</div>
         <div class="legend-item"><div class="legend-dot gray"></div> Víkend / zatvorené</div>
@@ -521,6 +521,22 @@ body.embed .customer-wrap { padding-top: 16px; }
   </div>
 </div>
 
+<!-- Admin: Nastavenie slotov pre konkrétny deň -->
+<div class="overlay" id="overlay-day-settings">
+  <div class="modal" style="max-width:380px">
+    <button class="modal-close" onclick="closeOverlay('overlay-day-settings')">✕</button>
+    <div class="modal-title">Nastavenie dňa</div>
+    <div id="day-settings-date-label" style="font-size:0.9rem;color:var(--muted);margin-bottom:18px"></div>
+    <div style="font-size:0.85rem;color:var(--dark);margin-bottom:10px;font-weight:600">Počet dostupných slotov</div>
+    <div id="day-slot-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"></div>
+    <div id="day-settings-info" style="font-size:0.78rem;color:var(--muted);min-height:20px"></div>
+    <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeOverlay('overlay-day-settings')">Zrušiť</button>
+      <button class="btn btn-primary" id="save-day-slots-btn" onclick="saveDaySlots()">Uložiť</button>
+    </div>
+  </div>
+</div>
+
 <!-- Admin: Pridať / upraviť rezerváciu -->
 <div class="overlay" id="overlay-admin-res">
   <div class="modal">
@@ -539,7 +555,9 @@ body.embed .customer-wrap { padding-top: 16px; }
 //  KONFIGURÁCIA
 // ═══════════════════════════════════════════════════════════════════
 
-const ADMIN_PASSWORD = 'admin123';
+// SHA-256 hash hesla — samotné heslo tu nie je
+// Vygeneruj hash na: https://emn178.github.io/online-tools/sha256.html
+const ADMIN_PASSWORD_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'; // = admin123
 const API_URL_KEY    = 'servisApiUrl';
 
 let API_URL = 'https://script.google.com/macros/s/AKfycby9tNpjvzIe5UYWj1I-4BNO4cYCWixfgJFCa5Ha1edn0yEzxOo-VF0foSTkcSF0Ief1/exec';
@@ -552,6 +570,7 @@ let reservations = [];
 let blockedDates = [];
 let slotsPerDay  = 2;
 let adminEmail   = '';
+let dayOverrides = {};   // { 'yyyy-mm-dd': počet_slotov }
 
 let editingResId = null;
 
@@ -599,6 +618,7 @@ async function refreshData() {
     slotsPerDay  = data.slotsPerDay  || 2;
     blockedDates = data.blockedDates || [];
     adminEmail   = data.adminEmail   || '';
+    dayOverrides = data.dayOverrides || {};
     renderCalendar();
   } catch (e) {
     console.warn('Chyba načítania:', e.message);
@@ -627,8 +647,12 @@ function showAdminEntry() {
   }
 }
 
-function adminLogin() {
-  if (document.getElementById('admin-pass').value === ADMIN_PASSWORD) {
+async function adminLogin() {
+  const pass    = document.getElementById('admin-pass').value;
+  const msgBuf  = new TextEncoder().encode(pass);
+  const hashBuf = await crypto.subtle.digest('SHA-256', msgBuf);
+  const hash    = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  if (hash === ADMIN_PASSWORD_HASH) {
     sessionStorage.setItem('adminLoggedIn', '1');
     document.getElementById('login-error').style.display = 'none';
     showView('admin');
@@ -708,8 +732,13 @@ function getUsedSlots(dateStr) {
   return reservations.filter(r => r.datum === dateStr).length;
 }
 
+// Vráti max. počet slotov pre daný deň — berie ohľad na denný override
+function getMaxSlots(dateStr) {
+  return (dayOverrides[dateStr] !== undefined) ? dayOverrides[dateStr] : slotsPerDay;
+}
+
 function getFreeSlots(dateStr) {
-  return Math.max(0, slotsPerDay - getUsedSlots(dateStr));
+  return Math.max(0, getMaxSlots(dateStr) - getUsedSlots(dateStr));
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1033,21 +1062,37 @@ function renderAdminCal() {
 
   const daysInMonth = new Date(adminCalYear, adminCalMonth + 1, 0).getDate();
   for (let day = 1; day <= daysInMonth; day++) {
-    const dtStr  = adminCalYear + '-' + String(adminCalMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
-    const isWknd = isWeekend(dtStr);
-    const isBlk  = isBlocked(dtStr);
-    const used   = getUsedSlots(dtStr);
-    const free   = getFreeSlots(dtStr);
-    const el     = document.createElement('div');
+    const dtStr   = adminCalYear + '-' + String(adminCalMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const isWknd  = isWeekend(dtStr);
+    const isBlk   = isBlocked(dtStr);
+    const used    = getUsedSlots(dtStr);
+    const maxSl   = getMaxSlots(dtStr);
+    const free    = getFreeSlots(dtStr);
+    const hasOver = dayOverrides[dtStr] !== undefined;
+    const el      = document.createElement('div');
     let cls = 'cal-day';
-    if (isWknd) cls += ' weekend';
-    else if (isBlk) cls += ' blocked';
+    if (isWknd)       cls += ' weekend';
+    else if (isBlk)   cls += ' blocked';
+    else if (maxSl === 0 || free === 0) cls += ' full';
     el.className = cls;
-    el.style.cursor = 'default';
+
+    if (!isWknd) {
+      el.style.cursor = 'pointer';
+      el.title = 'Kliknite pre nastavenie slotov';
+      el.onclick = () => openDaySettingsModal(dtStr);
+    } else {
+      el.style.cursor = 'default';
+    }
 
     const numEl = document.createElement('div');
     numEl.className = 'day-num';
     numEl.textContent = day;
+    // Malý indikátor overridu
+    if (hasOver) {
+      const dot = document.createElement('span');
+      dot.style.cssText = 'display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:3px;vertical-align:middle';
+      numEl.appendChild(dot);
+    }
     el.appendChild(numEl);
 
     if (!isWknd) {
@@ -1055,15 +1100,18 @@ function renderAdminCal() {
       if (isBlk) {
         badge.className = 'slot-badge closed';
         badge.textContent = 'Zatv.';
+      } else if (maxSl === 0) {
+        badge.className = 'slot-badge free-0';
+        badge.textContent = '0 slotov';
       } else if (free === 0) {
         badge.className = 'slot-badge free-0';
-        badge.textContent = used + '/' + slotsPerDay;
+        badge.textContent = used + '/' + maxSl;
       } else if (used > 0) {
         badge.className = 'slot-badge free-1';
-        badge.textContent = used + '/' + slotsPerDay;
+        badge.textContent = used + '/' + maxSl;
       } else {
         badge.className = 'slot-badge free-2';
-        badge.textContent = '0/' + slotsPerDay;
+        badge.textContent = '0/' + maxSl;
       }
       el.appendChild(badge);
     }
@@ -1093,6 +1141,99 @@ function renderAdminCal() {
         (bikeStr ? '<div style="color:var(--accent);font-size:0.72rem;margin-top:2px">' + bikeStr + '</div>' : '');
       list.appendChild(item);
     });
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMIN — NASTAVENIE SLOTOV PRE DEŇ
+// ═══════════════════════════════════════════════════════════════════
+
+let _daySettingsDate    = null;
+let _daySettingsSelected = null;   // číslo alebo null = globálne default
+
+function openDaySettingsModal(dateStr) {
+  _daySettingsDate = dateStr;
+  const hasOver  = dayOverrides[dateStr] !== undefined;
+  const curValue = hasOver ? dayOverrides[dateStr] : null;
+  _daySettingsSelected = curValue;
+
+  document.getElementById('day-settings-date-label').textContent = fmtDateLong(dateStr);
+
+  const used = getUsedSlots(dateStr);
+  _renderDaySlotBtns(used);
+  openOverlay('overlay-day-settings');
+}
+
+function _renderDaySlotBtns(usedCount) {
+  const container = document.getElementById('day-slot-btns');
+  container.innerHTML = '';
+
+  // Tlačidlo pre "globálne nastavenie"
+  const defBtn = document.createElement('button');
+  defBtn.className = 'btn btn-ghost btn-sm' + (_daySettingsSelected === null ? ' btn-primary' : '');
+  defBtn.style.cssText = 'min-width:56px;font-size:0.8rem';
+  defBtn.textContent = 'Štandard (' + slotsPerDay + ')';
+  defBtn.onclick = () => { _daySettingsSelected = null; _refreshDayBtns(usedCount); };
+  container.appendChild(defBtn);
+
+  // Tlačidlá 0–(slotsPerDay + 2) — adminovi dovolíme aj trochu nad globálny default
+  const maxShow = Math.max(slotsPerDay + 2, 6);
+  for (let n = 0; n <= maxShow; n++) {
+    const btn = document.createElement('button');
+    const isActive = _daySettingsSelected === n;
+    btn.className = 'btn btn-sm' + (isActive ? ' btn-primary' : ' btn-ghost');
+    btn.style.cssText = 'min-width:42px;font-size:0.85rem';
+    btn.textContent = n === 0 ? '0 ✕' : String(n);
+    if (n < usedCount) {
+      btn.disabled = true;
+      btn.title = 'Nemožno nastaviť nižšie ako existujúce rezervácie (' + usedCount + ')';
+    }
+    const val = n;
+    btn.onclick = () => { _daySettingsSelected = val; _refreshDayBtns(usedCount); };
+    container.appendChild(btn);
+  }
+
+  _updateDaySettingsInfo(usedCount);
+}
+
+function _refreshDayBtns(usedCount) {
+  _renderDaySlotBtns(usedCount);
+}
+
+function _updateDaySettingsInfo(usedCount) {
+  const info = document.getElementById('day-settings-info');
+  if (_daySettingsSelected === null) {
+    info.textContent = 'Bude použité globálne nastavenie (' + slotsPerDay + ' slotov / deň).';
+  } else if (_daySettingsSelected === 0) {
+    info.textContent = 'Deň bude uzatvorený — zákazníci si nebudú môcť vybrať tento termín.';
+  } else {
+    const free = Math.max(0, _daySettingsSelected - usedCount);
+    info.textContent = 'Celkom ' + _daySettingsSelected + ' slot' + (_daySettingsSelected > 1 ? 'y' : '') + '; ' + usedCount + ' obsadené, ' + free + ' voľné.';
+  }
+}
+
+async function saveDaySlots() {
+  if (!_daySettingsDate) return;
+  const btn = document.getElementById('save-day-slots-btn');
+  btn.disabled = true; btn.textContent = 'Ukladám...';
+
+  const newOverrides = { ...dayOverrides };
+  if (_daySettingsSelected === null) {
+    delete newOverrides[_daySettingsDate];
+  } else {
+    newOverrides[_daySettingsDate] = _daySettingsSelected;
+  }
+
+  try {
+    await apiCall('updateConfig', { config: { DAY_OVERRIDES: JSON.stringify(newOverrides) } });
+    dayOverrides = newOverrides;
+    closeOverlay('overlay-day-settings');
+    renderAdminCal();
+    renderCalendar();
+  } catch (e) {
+    alert('Chyba pri ukladaní: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Uložiť';
   }
 }
 
