@@ -1208,7 +1208,7 @@ function _updateDaySettingsInfo(usedCount) {
     info.textContent = 'Deň bude uzatvorený — zákazníci si nebudú môcť vybrať tento termín.';
   } else {
     const free = Math.max(0, _daySettingsSelected - usedCount);
-    info.textContent = 'Celkom ' + _daySettingsSelected + ' slot' + (_daySettingsSelected > 1 ? 'y' : '') + '; ' + usedCount + ' obsadené, ' + free + ' Voľné.';
+    info.textContent = 'Celkom ' + _daySettingsSelected + ' slot' + (_daySettingsSelected > 1 ? 'y' : '') + '; ' + usedCount + ' obsadené, ' + free + ' voľné.';
   }
 }
 
