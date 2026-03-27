@@ -322,7 +322,7 @@ body.embed .customer-wrap { padding-top: 16px; }
       <div class="legend">
         <div class="legend-item"><div class="legend-dot green"></div> voľné termíny</div>
         <div class="legend-item"><div class="legend-dot yellow"></div> 1 voľný termín</div>
-        <div class="legend-item"><div class="legend-dot red"></div> Plné</div>
+        <div class="legend-item"><div class="legend-dot red"></div> Obsadené</div>
         <div class="legend-item"><div class="legend-dot gray"></div> Víkend / zatvorené</div>
       </div>
     </div>
@@ -809,7 +809,7 @@ function renderCalendar() {
         badge.textContent = 'Zatvorené';
       } else if (free === 0) {
         badge.className = 'slot-badge free-0';
-        badge.textContent = 'Plné';
+        badge.textContent = 'Obsadené';
       } else if (free === 1) {
         badge.className = 'slot-badge free-1';
         badge.textContent = '1 voľný';
