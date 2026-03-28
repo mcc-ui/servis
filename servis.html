@@ -113,7 +113,7 @@ header .nav-btns { display: flex; gap: 8px; align-items: center; }
 .cal-day {
   border-radius: var(--radius); padding: 8px 4px;
   cursor: default; transition: all 0.14s; text-align: center;
-  min-width: 0; overflow: hidden;
+  min-width: 0;
   border: 1px solid transparent; min-height: 64px;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   background: #fff;
@@ -592,7 +592,7 @@ body.embed .customer-wrap { padding-top: 16px; }
   <div class="modal" style="max-width:600px">
     <button class="modal-close" onclick="closeOverlay('overlay-terms')">✕</button>
     <div class="modal-title">Podmienky servisu</div>
-    <div id="terms-content" style="font-size:0.88rem;line-height:1.75;color:var(--text);margin-top:16px;white-space:pre-wrap;max-height:60vh;overflow-y:auto"></div>
+    <div id="terms-content" style="font-size:0.88rem;line-height:1.75;color:var(--text);margin-top:16px;max-height:60vh;overflow-y:auto"></div>
     <div class="form-actions" style="margin-top:20px">
       <button class="btn btn-primary" onclick="closeOverlay('overlay-terms')">Zavrieť</button>
     </div>
@@ -1009,7 +1009,7 @@ function toggleBike2() {
 
 function openTermsModal(e) {
   e && e.preventDefault();
-  document.getElementById('terms-content').textContent =
+  document.getElementById('terms-content').innerHTML =
     serviceConditions || 'Podmienky servisu neboli zatiaľ nastavené. Kontaktujte nás priamo.';
   openOverlay('overlay-terms');
 }
