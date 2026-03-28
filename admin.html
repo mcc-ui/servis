@@ -409,6 +409,14 @@ tr:hover td { background:#fafafa; }
             <button class="btn btn-primary btn-sm" onclick="saveEmailTemplates('servis')">Uložiť šablóny servisu</button>
           </div>
         </div>
+        <div class="card" style="margin-top:12px">
+          <div class="form-group">
+            <label>Podmienky servisu</label>
+            <textarea id="se-conditions" rows="8" placeholder="Zadajte text podmienok servisu, ktorý zákazníci uvidia po kliknutí na odkaz v rezervačnom formulári…"></textarea>
+            <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Zákazník musí odškrtnúť súhlas s podmienkami pred odoslaním formulára. Obsah upravíte tu.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveServiceConditions()">Uložiť podmienky servisu</button>
+        </div>
 
         <div class="settings-section">
           <div class="settings-section-title">🚲 Požičovňa — e-maily</div>
@@ -647,9 +655,10 @@ async function loadServis() {
     servisAdminEmail   = d.adminEmail      || '';
     servisDayOverrides = d.dayOverrides    || {};
     // E-mail šablóny
-    if (d.emailCustomerSubj !== undefined) document.getElementById('se-customer-subj').value = d.emailCustomerSubj || '';
-    if (d.emailCustomerNote !== undefined) document.getElementById('se-customer-note').value = d.emailCustomerNote || '';
-    if (d.emailAdminSubj    !== undefined) document.getElementById('se-admin-subj').value    = d.emailAdminSubj    || '';
+    if (d.emailCustomerSubj  !== undefined) document.getElementById('se-customer-subj').value = d.emailCustomerSubj  || '';
+    if (d.emailCustomerNote  !== undefined) document.getElementById('se-customer-note').value = d.emailCustomerNote  || '';
+    if (d.emailAdminSubj     !== undefined) document.getElementById('se-admin-subj').value    = d.emailAdminSubj     || '';
+    if (d.serviceConditions  !== undefined) document.getElementById('se-conditions').value    = d.serviceConditions  || '';
     setStatus('servis', 'online');
   } catch (e) {
     console.warn('Servis API chyba:', e.message);
@@ -829,7 +838,9 @@ function servisCountForDay(dtStr) {
   return servisRes.filter(r => r.datum === dtStr).length;
 }
 function rentalCountForDay(dtStr) {
-  return rentalRes.filter(r => r.from <= dtStr && r.to >= dtStr).length;
+  return rentalRes
+    .filter(r => r.from <= dtStr && r.to >= dtStr)
+    .reduce((sum, r) => sum + (r.bikeIds || []).length, 0);
 }
 
 function renderOverviewCalendar() {
@@ -885,7 +896,7 @@ function renderOverviewCalendar() {
     }
     if (rCount > 0) {
       const chip = document.createElement('div');
-      chip.className='ev-chip ev-rental'; chip.textContent=rCount+'× bicykel'; el.appendChild(chip);
+      chip.className='ev-chip ev-rental'; chip.textContent=rCount+'× bicykel požičovňa'; el.appendChild(chip);
     }
 
     if (!isWknd && !isHol) {
@@ -1458,6 +1469,15 @@ async function saveEmailTemplates(system) {
       EMAIL_ADMIN_SUBJ:    asubj
     }});
     alert('E-mailové šablóny boli uložené!');
+  } catch(e) { alert('Chyba: '+e.message); }
+}
+
+async function saveServiceConditions() {
+  if (!SERVIS_URL) return alert('Nie je nastavená API URL pre Servis.');
+  const conditions = document.getElementById('se-conditions').value.trim();
+  try {
+    await apiCall(SERVIS_URL, 'updateConfig', { config: { SERVICE_CONDITIONS: conditions } });
+    alert('Podmienky servisu boli uložené!');
   } catch(e) { alert('Chyba: '+e.message); }
 }
 
