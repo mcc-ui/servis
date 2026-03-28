@@ -113,6 +113,7 @@ header .nav-btns { display: flex; gap: 8px; align-items: center; }
 .cal-day {
   border-radius: var(--radius); padding: 8px 4px;
   cursor: default; transition: all 0.14s; text-align: center;
+  min-width: 0; overflow: hidden;
   border: 1px solid transparent; min-height: 64px;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   background: #fff;
@@ -134,7 +135,7 @@ header .nav-btns { display: flex; gap: 8px; align-items: center; }
 .slot-badge.free-1 { background: #fef9c3; color: #854d0e; }
 .slot-badge.free-0 { background: #fee2e2; color: #991b1b; }
 .slot-badge.closed   { background: #f1f5f9; color: #94a3b8; }
-.slot-badge.holiday  { background: #e0e7ff; color: #3730a3; }
+.slot-badge.holiday  { background: #e0e7ff; color: #3730a3; white-space: normal; word-break: break-word; line-height: 1.2; display: block; }
 
 /* Legend */
 .legend { display: flex; gap: 14px; margin-top: 14px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
@@ -642,6 +643,7 @@ let slotsPerDay       = 2;
 let adminEmail        = '';
 let dayOverrides      = {};   // { 'yyyy-mm-dd': počet_slotov }
 let serviceConditions = '';
+let thankyouHtml      = '';
 
 let editingResId = null;
 
@@ -691,6 +693,7 @@ async function refreshData() {
     adminEmail        = data.adminEmail   || '';
     dayOverrides      = data.dayOverrides || {};
     if (data.serviceConditions !== undefined) serviceConditions = data.serviceConditions || '';
+    if (data.thankyouHtml      !== undefined) thankyouHtml      = data.thankyouHtml      || '';
     renderCalendar();
   } catch (e) {
     console.warn('Chyba načítania:', e.message);
@@ -1080,7 +1083,7 @@ function showThankyou(res) {
   const bikeStr  = [res.znacka,  res.model,  res.rokVyroby  ? '(' + res.rokVyroby  + ')' : ''].filter(Boolean).join(' ');
   const bike2Str = [res.znacka2, res.model2, res.rokVyroby2 ? '(' + res.rokVyroby2 + ')' : ''].filter(Boolean).join(' ');
   const fullName = (res.meno ? res.meno + ' ' : '') + res.priezvisko;
-  document.getElementById('thankyou-details').innerHTML =
+  const defaultDetails =
     '<div class="detail-row"><span class="dk">Termín</span><span class="dv">' + fmtDateLong(res.datum) + '</span></div>' +
     '<div class="detail-row"><span class="dk">Zákazník</span><span class="dv">' + fullName + '</span></div>' +
     '<div class="detail-row"><span class="dk">Telefón</span><span class="dv">' + res.telefon + '</span></div>' +
@@ -1088,6 +1091,13 @@ function showThankyou(res) {
     '<div class="detail-row"><span class="dk">Bicykel' + (bike2Str ? ' 1' : '') + '</span><span class="dv">' + (bikeStr || '—') + '</span></div>' +
     (bike2Str ? '<div class="detail-row"><span class="dk">Bicykel 2</span><span class="dv">' + bike2Str + '</span></div>' : '') +
     '<div class="detail-row"><span class="dk">Problém</span><span class="dv">' + res.popis + '</span></div>';
+
+  const detailsEl = document.getElementById('thankyou-details');
+  if (thankyouHtml) {
+    detailsEl.innerHTML = thankyouHtml.replace(/\{details\}/g, defaultDetails);
+  } else {
+    detailsEl.innerHTML = defaultDetails;
+  }
   showView('thankyou');
 }
 
