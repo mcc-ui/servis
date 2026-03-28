@@ -379,60 +379,102 @@ tr:hover td { background:#fafafa; }
 
       <!-- ── PANEL: DOKUMENTY ── -->
       <div class="admin-panel" id="panel-documents">
-        <div class="panel-title">Dokumenty požičovne</div>
-        <div id="documents-editor"></div>
+        <div class="panel-title">Dokumenty</div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">🚲 Požičovňa — dokumenty</div>
+          <div id="documents-editor"></div>
+          <div class="card" style="margin-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <div>
+                <div style="font-size:1rem;font-weight:700">✅ Stránka poďakovania</div>
+                <div style="font-size:.74rem;color:var(--muted);margin-top:2px">Zobrazí sa zákazníkovi po úspešnej rezervácii bicykla</div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="saveThankyouText('rental')">💾 Uložiť</button>
+            </div>
+            <div class="form-group">
+              <label>Text / HTML obsah</label>
+              <textarea id="doc-thankyou-rental" rows="5" placeholder="Text alebo HTML, ktorý sa zobrazí zákazníkovi po úspešnej rezervácii požičovne…" style="min-height:100px;font-family:monospace;font-size:.8rem"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">🔧 Servis — dokumenty</div>
+          <div class="card" style="margin-bottom:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <div>
+                <div style="font-size:1rem;font-weight:700">📋 Podmienky servisu</div>
+                <div style="font-size:.74rem;color:var(--muted);margin-top:2px">Zákazník musí odškrtnúť súhlas pred odoslaním rezervácie</div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="saveServiceConditions()">💾 Uložiť</button>
+            </div>
+            <div class="form-group">
+              <textarea id="se-conditions" rows="8" placeholder="Zadajte text podmienok servisu, ktorý zákazníci uvidia po kliknutí na odkaz v rezervačnom formulári…"></textarea>
+            </div>
+          </div>
+          <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <div>
+                <div style="font-size:1rem;font-weight:700">✅ Stránka poďakovania</div>
+                <div style="font-size:.74rem;color:var(--muted);margin-top:2px">Zobrazí sa zákazníkovi po úspešnom odoslaní objednávky servisu</div>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="saveThankyouText('servis')">💾 Uložiť</button>
+            </div>
+            <div class="form-group">
+              <label>Text / HTML obsah</label>
+              <textarea id="doc-thankyou-servis" rows="5" placeholder="Text alebo HTML, ktorý sa zobrazí zákazníkovi po úspešnom odoslaní objednávky servisu…" style="min-height:100px;font-family:monospace;font-size:.8rem"></textarea>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ── PANEL: E-MAILY ── -->
       <div class="admin-panel" id="panel-emails">
         <div class="panel-title">E-mailové šablóny</div>
-        <p style="font-size:.84rem;color:var(--muted);margin-bottom:22px">Upravte texty, ktoré dostanú zákazníci v potvrdzovacích e-mailoch. Uložené hodnoty sa použijú namiesto predvolených textov.</p>
+        <p style="font-size:.84rem;color:var(--muted);margin-bottom:22px">Upravte predmety a texty notifikačných e-mailov. Prázdne pole = použije sa predvolený text.</p>
 
         <div class="settings-section">
           <div class="settings-section-title">🔧 Servis — e-maily</div>
-          <div class="card" style="margin-bottom:16px">
+          <div class="card">
+            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📨 E-mail zákazníkovi</div>
             <div class="form-group">
-              <label>Predmet e-mailu zákazníkovi</label>
+              <label>Predmet</label>
               <input type="text" id="se-customer-subj" placeholder="napr. Potvrdenie rezervácie servisu — {datum}">
               <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code></div>
             </div>
             <div class="form-group">
-              <label>Vlastná poznámka v e-maile zákazníkovi</label>
+              <label>Vlastná poznámka (zobrazí sa pod zhrnutím rezervácie)</label>
               <textarea id="se-customer-note" rows="3" placeholder="napr. V prípade otázok nás kontaktujte na tel. 0900 000 000."></textarea>
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Zobrazí sa pod zhrnutím rezervácie.</div>
             </div>
+            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:16px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📬 Notifikácia adminovi</div>
             <div class="form-group">
-              <label>Predmet notifikácie adminovi</label>
+              <label>Predmet</label>
               <input type="text" id="se-admin-subj" placeholder="napr. Nová rezervácia servisu — {meno} — {datum}">
               <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code></div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="saveEmailTemplates('servis')">Uložiť šablóny servisu</button>
           </div>
         </div>
-        <div class="card" style="margin-top:12px">
-          <div class="form-group">
-            <label>Podmienky servisu</label>
-            <textarea id="se-conditions" rows="8" placeholder="Zadajte text podmienok servisu, ktorý zákazníci uvidia po kliknutí na odkaz v rezervačnom formulári…"></textarea>
-            <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Zákazník musí odškrtnúť súhlas s podmienkami pred odoslaním formulára. Obsah upravíte tu.</div>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="saveServiceConditions()">Uložiť podmienky servisu</button>
-        </div>
 
         <div class="settings-section">
           <div class="settings-section-title">🚲 Požičovňa — e-maily</div>
           <div class="card">
+            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📨 E-mail zákazníkovi</div>
             <div class="form-group">
-              <label>Predmet e-mailu zákazníkovi</label>
+              <label>Predmet</label>
               <input type="text" id="re-customer-subj" placeholder="napr. Potvrdenie rezervácie bicykla — {datum}">
               <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{bicykel}</code></div>
             </div>
             <div class="form-group">
-              <label>Vlastná poznámka v e-maile zákazníkovi</label>
+              <label>Vlastná poznámka (zobrazí sa pod zhrnutím rezervácie)</label>
               <textarea id="re-customer-note" rows="3" placeholder="napr. Prosíme, príďte 15 minút pred začiatkom prenájmu."></textarea>
             </div>
+            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:16px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📬 Notifikácia adminovi</div>
             <div class="form-group">
-              <label>Predmet notifikácie adminovi</label>
+              <label>Predmet</label>
               <input type="text" id="re-admin-subj" placeholder="napr. Nová rezervácia požičovne — {meno} — {datum}">
+              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code></div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="saveEmailTemplates('rental')">Uložiť šablóny požičovne</button>
           </div>
@@ -655,10 +697,11 @@ async function loadServis() {
     servisAdminEmail   = d.adminEmail      || '';
     servisDayOverrides = d.dayOverrides    || {};
     // E-mail šablóny
-    if (d.emailCustomerSubj  !== undefined) document.getElementById('se-customer-subj').value = d.emailCustomerSubj  || '';
-    if (d.emailCustomerNote  !== undefined) document.getElementById('se-customer-note').value = d.emailCustomerNote  || '';
-    if (d.emailAdminSubj     !== undefined) document.getElementById('se-admin-subj').value    = d.emailAdminSubj     || '';
-    if (d.serviceConditions  !== undefined) document.getElementById('se-conditions').value    = d.serviceConditions  || '';
+    if (d.emailCustomerSubj  !== undefined) document.getElementById('se-customer-subj').value   = d.emailCustomerSubj  || '';
+    if (d.emailCustomerNote  !== undefined) document.getElementById('se-customer-note').value   = d.emailCustomerNote  || '';
+    if (d.emailAdminSubj     !== undefined) document.getElementById('se-admin-subj').value      = d.emailAdminSubj     || '';
+    if (d.serviceConditions  !== undefined) document.getElementById('se-conditions').value      = d.serviceConditions  || '';
+    if (d.thankyouText       !== undefined) { const el=document.getElementById('doc-thankyou-servis'); if(el) el.value = d.thankyouText || ''; }
     setStatus('servis', 'online');
   } catch (e) {
     console.warn('Servis API chyba:', e.message);
@@ -681,6 +724,7 @@ async function loadRental() {
     if (d.emailCustomerSubj !== undefined) document.getElementById('re-customer-subj').value = d.emailCustomerSubj || '';
     if (d.emailCustomerNote !== undefined) document.getElementById('re-customer-note').value = d.emailCustomerNote || '';
     if (d.emailAdminSubj    !== undefined) document.getElementById('re-admin-subj').value    = d.emailAdminSubj    || '';
+    if (d.thankyouText      !== undefined) { const el=document.getElementById('doc-thankyou-rental'); if(el) el.value = d.thankyouText || ''; }
     setStatus('rental', 'online');
   } catch (e) {
     console.warn('Požičovňa API chyba:', e.message);
@@ -1161,8 +1205,25 @@ function renderServisTable() {
   });
 }
 
+function sfToggleBike2() {
+  const section = document.getElementById('sf-bike2-section');
+  const toggle  = document.getElementById('sf-bike2-toggle');
+  const visible = section.style.display !== 'none';
+  if (visible) {
+    section.style.display = 'none';
+    toggle.style.display  = '';
+    document.getElementById('sf-znacka2').value = '';
+    document.getElementById('sf-model2').value  = '';
+    document.getElementById('sf-rok2').value    = '';
+  } else {
+    section.style.display = 'block';
+    toggle.style.display  = 'none';
+  }
+}
+
 function openServisModal(id) {
-  const r = id ? servisRes.find(x=>x.id===id) : null;
+  const r        = id ? servisRes.find(x=>x.id===id) : null;
+  const hasBike2 = !!(r && r.znacka2);
   editingServisId = id || null;
   document.getElementById('servis-modal-title').textContent = r ? 'Upraviť rezerváciu servisu' : 'Pridať rezerváciu servisu';
   document.getElementById('servis-modal-form').innerHTML =
@@ -1180,7 +1241,7 @@ function openServisModal(id) {
       '<div class="form-group"><label>Telefón</label><input type="tel" id="sf-telefon" value="'+escHtml(r?r.telefon||'':'')+'"></div>'+
       '<div class="form-group"><label>E-mail</label><input type="email" id="sf-email" value="'+escHtml(r?r.email||'':'')+'"></div>'+
     '</div>'+
-    '<div class="fsec">Bicykel</div>'+
+    '<div class="fsec">Bicykel'+(hasBike2?' 1':'')+'</div>'+
     '<div class="form-row">'+
       '<div class="form-group"><label>Značka</label><input type="text" id="sf-znacka" value="'+escHtml(r?r.znacka||'':'')+'"></div>'+
       '<div class="form-group"><label>Model</label><input type="text" id="sf-model" value="'+escHtml(r?r.model||'':'')+'"></div>'+
@@ -1188,6 +1249,23 @@ function openServisModal(id) {
     '<div class="form-row">'+
       '<div class="form-group"><label>Rok výroby</label><input type="number" id="sf-rok" value="'+escHtml(r?r.rokVyroby||'':'')+'"></div>'+
       '<div class="form-group"></div>'+
+    '</div>'+
+    '<div id="sf-bike2-toggle"'+(hasBike2?' style="display:none"':'')+'>'+
+      '<button type="button" class="btn btn-ghost btn-sm" style="margin:4px 0 2px" onclick="sfToggleBike2()">+ Pridať 2. bicykel</button>'+
+    '</div>'+
+    '<div id="sf-bike2-section" style="display:'+(hasBike2?'block':'none')+'">'+
+      '<div class="fsec" style="display:flex;justify-content:space-between;align-items:center">'+
+        '<span>Bicykel 2</span>'+
+        '<button type="button" onclick="sfToggleBike2()" style="background:none;border:none;cursor:pointer;font-size:.78rem;color:var(--muted);padding:0;font-family:inherit">✕ Odstrániť</button>'+
+      '</div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>Značka</label><input type="text" id="sf-znacka2" value="'+escHtml(r?r.znacka2||'':'')+'"></div>'+
+        '<div class="form-group"><label>Model</label><input type="text" id="sf-model2" value="'+escHtml(r?r.model2||'':'')+'"></div>'+
+      '</div>'+
+      '<div class="form-row">'+
+        '<div class="form-group"><label>Rok výroby</label><input type="number" id="sf-rok2" value="'+escHtml(r?r.rokVyroby2||'':'')+'"></div>'+
+        '<div class="form-group"></div>'+
+      '</div>'+
     '</div>'+
     '<div class="fsec">Popis problému</div>'+
     '<div class="form-group"><textarea id="sf-popis" rows="3">'+escHtml(r?r.popis||'':'')+'</textarea></div>';
@@ -1206,21 +1284,25 @@ async function saveServisReservation() {
   const rokVyroby  = document.getElementById('sf-rok').value.trim();
   const popis      = document.getElementById('sf-popis').value.trim();
 
-  if (!datum)               return alert('Vyberte dátum.');
-  if (!meno || !priezvisko) return alert('Vyplňte meno a priezvisko.');
-  if (!telefon)             return alert('Vyplňte telefón.');
-  if (!SERVIS_URL)          return alert('Nie je nastavené Servis API URL.');
+  const bike2visible = document.getElementById('sf-bike2-section').style.display !== 'none';
+  const znacka2    = bike2visible ? document.getElementById('sf-znacka2').value.trim() : '';
+  const model2     = bike2visible ? document.getElementById('sf-model2').value.trim()  : '';
+  const rokVyroby2 = bike2visible ? document.getElementById('sf-rok2').value.trim()    : '';
+
+  if (!SERVIS_URL) return alert('Nie je nastavené Servis API URL.');
 
   const btn = document.getElementById('servis-save-btn');
   btn.disabled=true; btn.textContent='Ukladám...';
   try {
+    const payload = {datum,meno,priezvisko,telefon,email,znacka,model,rokVyroby,popis};
+    if (bike2visible && znacka2) Object.assign(payload, {znacka2,model2,rokVyroby2});
     if (id) {
-      await apiCall(SERVIS_URL, 'updateReservation', {id,datum,meno,priezvisko,telefon,email,znacka,model,rokVyroby,popis});
+      await apiCall(SERVIS_URL, 'updateReservation', {id,...payload});
       const idx = servisRes.findIndex(r=>r.id===id);
-      if (idx>=0) servisRes[idx]={...servisRes[idx],datum,meno,priezvisko,telefon,email,znacka,model,rokVyroby,popis};
+      if (idx>=0) servisRes[idx]={...servisRes[idx],...payload};
     } else {
-      const result = await apiCall(SERVIS_URL, 'addReservation', {datum,meno,priezvisko,telefon,email,znacka,model,rokVyroby,popis,adminAdded:true});
-      servisRes.push({id:result.id,datum,meno,priezvisko,telefon,email,znacka,model,rokVyroby,popis});
+      const result = await apiCall(SERVIS_URL, 'addReservation', {...payload, adminAdded:true});
+      servisRes.push({id:result.id,...payload});
     }
     closeOverlay('overlay-servis');
     renderServisTable();
@@ -1478,6 +1560,17 @@ async function saveServiceConditions() {
   try {
     await apiCall(SERVIS_URL, 'updateConfig', { config: { SERVICE_CONDITIONS: conditions } });
     alert('Podmienky servisu boli uložené!');
+  } catch(e) { alert('Chyba: '+e.message); }
+}
+
+async function saveThankyouText(system) {
+  const isServis = system === 'servis';
+  const url  = isServis ? SERVIS_URL : RENTAL_URL;
+  const text = document.getElementById('doc-thankyou-'+system).value.trim();
+  if (!url) return alert('Nie je nastavená API URL pre '+(isServis?'Servis':'Požičovňu')+'.');
+  try {
+    await apiCall(url, 'updateConfig', { config: { THANKYOU_TEXT: text } });
+    alert('Stránka poďakovania bola uložená!');
   } catch(e) { alert('Chyba: '+e.message); }
 }
 
