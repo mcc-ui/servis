@@ -189,6 +189,23 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); box-sha
 textarea { resize: vertical; min-height: 90px; }
 .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 
+/* Age warning */
+.age-warning {
+  background: #fff8e1; color: #7a5800; font-size: 0.78rem;
+  padding: 8px 10px; border-radius: var(--radius); margin-top: 6px;
+  border: 1px solid #ffe082; line-height: 1.5;
+}
+/* Checkbox label */
+.checkbox-label { display: flex; align-items: flex-start; gap: 8px; font-size: 0.84rem; cursor: pointer; color: var(--text); line-height: 1.5; }
+.checkbox-label a { color: var(--accent); text-decoration: underline; cursor: pointer; }
+.checkbox-label input[type=checkbox] { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; accent-color: var(--accent); }
+.terms-row { margin-bottom: 14px; }
+/* Add bike button row */
+.add-bike-row { margin: 4px 0 0; }
+.bike2-header { display: flex; justify-content: space-between; align-items: center; }
+.bike2-remove { background: none; border: none; cursor: pointer; font-size: 0.78rem; color: var(--muted); padding: 0; font-family: inherit; }
+.bike2-remove:hover { color: var(--red); }
+
 /* ── THANK YOU ── */
 .thankyou-wrap { max-width: 520px; margin: 64px auto; text-align: center; padding: 20px; }
 .thankyou-icon {
@@ -475,7 +492,7 @@ body.embed .customer-wrap { padding-top: 16px; }
     <div class="fsec">Kontaktné údaje</div>
     <div class="form-row">
       <div class="form-group">
-        <label>Meno *</label>
+        <label>Meno</label>
         <input type="text" id="res-meno" placeholder="Meno">
       </div>
       <div class="form-group">
@@ -507,10 +524,40 @@ body.embed .customer-wrap { padding-top: 16px; }
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Rok výroby (pribl.)</label>
-        <input type="number" id="res-rok" placeholder="napr. 2019" min="1980" max="2030">
+        <label>Rok výroby (približný)</label>
+        <input type="number" id="res-rok" placeholder="napr. 2019" min="1980" max="2030" oninput="checkBikeAge(this,'res-rok-warn')">
+        <div id="res-rok-warn" class="age-warning" style="display:none">Vzhľadom na vysoký vek bicykla je potrebné bicykel priviezť na obhliadku pred finálnym potvrdením termínu servisu — bicykle po životnosti do servisu neprijímame.</div>
       </div>
       <div class="form-group"></div>
+    </div>
+
+    <!-- Druhý bicykel -->
+    <div class="add-bike-row" id="bike2-toggle-row">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="toggleBike2()">+ Pridať ďalší bicykel</button>
+    </div>
+    <div id="bike2-section" style="display:none">
+      <div class="fsec bike2-header">
+        <span>Informácie o 2. bicykli</span>
+        <button type="button" class="bike2-remove" onclick="toggleBike2()">✕ Odstrániť</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Značka *</label>
+          <input type="text" id="res-znacka2" placeholder="Trek, Specialized, Giant…">
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <input type="text" id="res-model2" placeholder="Marlin 7, Rockhopper…">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Rok výroby (približný)</label>
+          <input type="number" id="res-rok2" placeholder="napr. 2019" min="1980" max="2030" oninput="checkBikeAge(this,'res-rok2-warn')">
+          <div id="res-rok2-warn" class="age-warning" style="display:none">Vzhľadom na vysoký vek bicykla je potrebné bicykel priviezť na obhliadku pred finálnym potvrdením termínu servisu — bicykle po životnosti do servisu neprijímame.</div>
+        </div>
+        <div class="form-group"></div>
+      </div>
     </div>
 
     <div class="fsec">Popis problému *</div>
@@ -518,9 +565,28 @@ body.embed .customer-wrap { padding-top: 16px; }
       <textarea id="res-popis" placeholder="Stručne popíšte, čo s bicyklom nie je v poriadku…"></textarea>
     </div>
 
+    <div class="terms-row">
+      <label class="checkbox-label">
+        <input type="checkbox" id="res-terms-check">
+        <span>Oboznámil som sa s <a onclick="openTermsModal(event)">podmienkami servisu</a></span>
+      </label>
+    </div>
+
     <div class="form-actions">
       <button class="btn btn-ghost" onclick="closeOverlay('overlay-reservation')">Zrušiť</button>
       <button class="btn btn-primary" id="submit-res-btn" onclick="submitReservation()">Odoslať žiadosť →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Podmienky servisu -->
+<div class="overlay" id="overlay-terms">
+  <div class="modal" style="max-width:600px">
+    <button class="modal-close" onclick="closeOverlay('overlay-terms')">✕</button>
+    <div class="modal-title">Podmienky servisu</div>
+    <div id="terms-content" style="font-size:0.88rem;line-height:1.75;color:var(--text);margin-top:16px;white-space:pre-wrap;max-height:60vh;overflow-y:auto"></div>
+    <div class="form-actions" style="margin-top:20px">
+      <button class="btn btn-primary" onclick="closeOverlay('overlay-terms')">Zavrieť</button>
     </div>
   </div>
 </div>
@@ -570,11 +636,12 @@ let API_URL = 'https://script.google.com/macros/s/AKfycby9tNpjvzIe5UYWj1I-4BNO4c
 //  STATE
 // ═══════════════════════════════════════════════════════════════════
 
-let reservations = [];
-let blockedDates = [];
-let slotsPerDay  = 2;
-let adminEmail   = '';
-let dayOverrides = {};   // { 'yyyy-mm-dd': počet_slotov }
+let reservations      = [];
+let blockedDates      = [];
+let slotsPerDay       = 2;
+let adminEmail        = '';
+let dayOverrides      = {};   // { 'yyyy-mm-dd': počet_slotov }
+let serviceConditions = '';
 
 let editingResId = null;
 
@@ -617,12 +684,13 @@ async function apiCall(action, data = {}) {
 
 async function refreshData() {
   try {
-    const data   = await apiCall('getAll');
-    reservations = data.reservations || [];
-    slotsPerDay  = data.slotsPerDay  || 2;
-    blockedDates = data.blockedDates || [];
-    adminEmail   = data.adminEmail   || '';
-    dayOverrides = data.dayOverrides || {};
+    const data        = await apiCall('getAll');
+    reservations      = data.reservations || [];
+    slotsPerDay       = data.slotsPerDay  || 2;
+    blockedDates      = data.blockedDates || [];
+    adminEmail        = data.adminEmail   || '';
+    dayOverrides      = data.dayOverrides || {};
+    if (data.serviceConditions !== undefined) serviceConditions = data.serviceConditions || '';
     renderCalendar();
   } catch (e) {
     console.warn('Chyba načítania:', e.message);
@@ -902,6 +970,40 @@ function renderCalendar() {
 //  REZERVAČNÝ FORMULÁR (zákazník)
 // ═══════════════════════════════════════════════════════════════════
 
+function checkBikeAge(input, warnId) {
+  const rok  = parseInt(input.value);
+  const warn = document.getElementById(warnId);
+  if (rok && !isNaN(rok) && (new Date().getFullYear() - rok) > 15) {
+    warn.style.display = 'block';
+  } else {
+    warn.style.display = 'none';
+  }
+}
+
+function toggleBike2() {
+  const section   = document.getElementById('bike2-section');
+  const toggleRow = document.getElementById('bike2-toggle-row');
+  const visible   = section.style.display !== 'none';
+  if (visible) {
+    section.style.display   = 'none';
+    toggleRow.style.display = 'block';
+    document.getElementById('res-znacka2').value     = '';
+    document.getElementById('res-model2').value      = '';
+    document.getElementById('res-rok2').value        = '';
+    document.getElementById('res-rok2-warn').style.display = 'none';
+  } else {
+    section.style.display   = 'block';
+    toggleRow.style.display = 'none';
+  }
+}
+
+function openTermsModal(e) {
+  e && e.preventDefault();
+  document.getElementById('terms-content').textContent =
+    serviceConditions || 'Podmienky servisu neboli zatiaľ nastavené. Kontaktujte nás priamo.';
+  openOverlay('overlay-terms');
+}
+
 function openReservationModal(dateStr) {
   editingResId = null;
   document.getElementById('res-meno').value       = '';
@@ -912,6 +1014,15 @@ function openReservationModal(dateStr) {
   document.getElementById('res-model').value      = '';
   document.getElementById('res-rok').value        = '';
   document.getElementById('res-popis').value      = '';
+  document.getElementById('res-rok-warn').style.display  = 'none';
+  document.getElementById('res-terms-check').checked     = false;
+  // Reset 2. bicykel
+  document.getElementById('bike2-section').style.display   = 'none';
+  document.getElementById('bike2-toggle-row').style.display = 'block';
+  document.getElementById('res-znacka2').value     = '';
+  document.getElementById('res-model2').value      = '';
+  document.getElementById('res-rok2').value        = '';
+  document.getElementById('res-rok2-warn').style.display = 'none';
   document.getElementById('res-date-label').textContent = fmtDateLong(dateStr);
   document.getElementById('res-date-label').dataset.date = dateStr;
   openOverlay('overlay-reservation');
@@ -928,10 +1039,18 @@ async function submitReservation() {
   const rokVyroby  = document.getElementById('res-rok').value.trim();
   const popis      = document.getElementById('res-popis').value.trim();
 
-  if (!meno || !priezvisko) return alert('Vyplňte meno a priezvisko.');
-  if (!telefon)             return alert('Vyplňte telefónne číslo.');
-  if (!znacka)              return alert('Vyplňte značku bicykla.');
-  if (!popis)               return alert('Stručne opíšte problém s bicyklom.');
+  const bike2visible = document.getElementById('bike2-section').style.display !== 'none';
+  const znacka2      = bike2visible ? document.getElementById('res-znacka2').value.trim() : '';
+  const model2       = bike2visible ? document.getElementById('res-model2').value.trim()  : '';
+  const rokVyroby2   = bike2visible ? document.getElementById('res-rok2').value.trim()    : '';
+
+  if (!priezvisko)               return alert('Vyplňte priezvisko.');
+  if (!telefon)                  return alert('Vyplňte telefónne číslo.');
+  if (!znacka)                   return alert('Vyplňte značku bicykla.');
+  if (bike2visible && !znacka2)  return alert('Vyplňte značku 2. bicykla.');
+  if (!popis)                    return alert('Stručne opíšte problém s bicyklom.');
+  if (!document.getElementById('res-terms-check').checked)
+                                 return alert('Musíte sa oboznámiť s podmienkami servisu.');
 
   // Overenie voľnosti termínu
   if (getFreeSlots(datum) === 0) return alert('Tento termín je žiaľ plný. Vyberte iný dátum.');
@@ -941,12 +1060,13 @@ async function submitReservation() {
   btn.textContent = 'Odosielam...';
 
   try {
-    const result = await apiCall('addReservation', { datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis });
-    // Okamžite pridaj lokálne pre okamžitú odozvu UI
-    reservations.push({ id: result.id, datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis });
+    const payload = { datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis };
+    if (bike2visible && znacka2) Object.assign(payload, { znacka2, model2, rokVyroby2 });
+    const result = await apiCall('addReservation', payload);
+    reservations.push({ id: result.id, ...payload });
     renderCalendar();
     closeOverlay('overlay-reservation');
-    showThankyou({ datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis });
+    showThankyou(payload);
     refreshData();
   } catch (e) {
     alert('Chyba pri odosielaní: ' + e.message);
@@ -957,13 +1077,16 @@ async function submitReservation() {
 }
 
 function showThankyou(res) {
-  const bikeStr = [res.znacka, res.model, res.rokVyroby ? '(' + res.rokVyroby + ')' : ''].filter(Boolean).join(' ');
+  const bikeStr  = [res.znacka,  res.model,  res.rokVyroby  ? '(' + res.rokVyroby  + ')' : ''].filter(Boolean).join(' ');
+  const bike2Str = [res.znacka2, res.model2, res.rokVyroby2 ? '(' + res.rokVyroby2 + ')' : ''].filter(Boolean).join(' ');
+  const fullName = (res.meno ? res.meno + ' ' : '') + res.priezvisko;
   document.getElementById('thankyou-details').innerHTML =
     '<div class="detail-row"><span class="dk">Termín</span><span class="dv">' + fmtDateLong(res.datum) + '</span></div>' +
-    '<div class="detail-row"><span class="dk">Zákazník</span><span class="dv">' + res.meno + ' ' + res.priezvisko + '</span></div>' +
+    '<div class="detail-row"><span class="dk">Zákazník</span><span class="dv">' + fullName + '</span></div>' +
     '<div class="detail-row"><span class="dk">Telefón</span><span class="dv">' + res.telefon + '</span></div>' +
     (res.email ? '<div class="detail-row"><span class="dk">E-mail</span><span class="dv">' + res.email + '</span></div>' : '') +
-    '<div class="detail-row"><span class="dk">Bicykel</span><span class="dv">' + (bikeStr || '—') + '</span></div>' +
+    '<div class="detail-row"><span class="dk">Bicykel' + (bike2Str ? ' 1' : '') + '</span><span class="dv">' + (bikeStr || '—') + '</span></div>' +
+    (bike2Str ? '<div class="detail-row"><span class="dk">Bicykel 2</span><span class="dv">' + bike2Str + '</span></div>' : '') +
     '<div class="detail-row"><span class="dk">Problém</span><span class="dv">' + res.popis + '</span></div>';
   showView('thankyou');
 }
