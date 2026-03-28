@@ -441,17 +441,23 @@ tr:hover td { background:#fafafa; }
             <div class="form-group">
               <label>Predmet</label>
               <input type="text" id="se-customer-subj" placeholder="napr. Potvrdenie rezervácie servisu — {datum}">
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code></div>
+              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code>, <code>{telefon}</code>, <code>{email}</code>, <code>{bicykel}</code>, <code>{bicykel2}</code>, <code>{popis}</code>, <code>{tabulka}</code></div>
             </div>
             <div class="form-group">
-              <label>Vlastná poznámka (zobrazí sa pod zhrnutím rezervácie)</label>
-              <textarea id="se-customer-note" rows="3" placeholder="napr. V prípade otázok nás kontaktujte na tel. 0900 000 000."></textarea>
+              <label>HTML telo e-mailu</label>
+              <textarea id="se-customer-body" rows="10" placeholder="Kompletné HTML telo e-mailu zákazníkovi. Použite {tabulka} pre vloženie zhrnutia rezervácie." style="font-family:monospace;font-size:.8rem;min-height:180px"></textarea>
+              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Ak je prázdne, použije sa predvolená šablóna. Premenné: <code>{datum}</code>, <code>{meno}</code>, <code>{telefon}</code>, <code>{email}</code>, <code>{bicykel}</code>, <code>{bicykel2}</code>, <code>{popis}</code>, <code>{tabulka}</code></div>
             </div>
             <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:16px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📬 Notifikácia adminovi</div>
             <div class="form-group">
               <label>Predmet</label>
               <input type="text" id="se-admin-subj" placeholder="napr. Nová rezervácia servisu — {meno} — {datum}">
               <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code></div>
+            </div>
+            <div class="form-group">
+              <label>HTML telo e-mailu adminovi</label>
+              <textarea id="se-admin-body" rows="10" placeholder="Kompletné HTML telo notifikácie adminovi. Použite {tabulka} pre vloženie zhrnutia rezervácie." style="font-family:monospace;font-size:.8rem;min-height:180px"></textarea>
+              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Ak je prázdne, použije sa predvolená šablóna.</div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="saveEmailTemplates('servis')">Uložiť šablóny servisu</button>
           </div>
@@ -464,17 +470,23 @@ tr:hover td { background:#fafafa; }
             <div class="form-group">
               <label>Predmet</label>
               <input type="text" id="re-customer-subj" placeholder="napr. Potvrdenie rezervácie bicykla — {datum}">
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{bicykel}</code></div>
+              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code>, <code>{bicykel}</code>, <code>{tabulka}</code></div>
             </div>
             <div class="form-group">
-              <label>Vlastná poznámka (zobrazí sa pod zhrnutím rezervácie)</label>
-              <textarea id="re-customer-note" rows="3" placeholder="napr. Prosíme, príďte 15 minút pred začiatkom prenájmu."></textarea>
+              <label>HTML telo e-mailu</label>
+              <textarea id="re-customer-body" rows="10" placeholder="Kompletné HTML telo e-mailu zákazníkovi. Použite {tabulka} pre vloženie zhrnutia rezervácie." style="font-family:monospace;font-size:.8rem;min-height:180px"></textarea>
+              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Ak je prázdne, použije sa predvolená šablóna. Premenné: <code>{datum}</code>, <code>{meno}</code>, <code>{telefon}</code>, <code>{email}</code>, <code>{bicykel}</code>, <code>{tabulka}</code></div>
             </div>
             <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:16px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📬 Notifikácia adminovi</div>
             <div class="form-group">
               <label>Predmet</label>
               <input type="text" id="re-admin-subj" placeholder="napr. Nová rezervácia požičovne — {meno} — {datum}">
               <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code></div>
+            </div>
+            <div class="form-group">
+              <label>HTML telo e-mailu adminovi</label>
+              <textarea id="re-admin-body" rows="10" placeholder="Kompletné HTML telo notifikácie adminovi. Použite {tabulka} pre vloženie zhrnutia rezervácie." style="font-family:monospace;font-size:.8rem;min-height:180px"></textarea>
+              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Ak je prázdne, použije sa predvolená šablóna.</div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="saveEmailTemplates('rental')">Uložiť šablóny požičovne</button>
           </div>
@@ -616,8 +628,11 @@ const ADMIN_PASSWORD_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa82
 const KEY_SERVIS_URL = 'servisApiUrl';
 const KEY_RENTAL_URL = 'bikeRentalApiUrl';
 
-let SERVIS_URL = localStorage.getItem(KEY_SERVIS_URL) || '';
-let RENTAL_URL = localStorage.getItem(KEY_RENTAL_URL) || '';
+const DEFAULT_SERVIS_URL = 'https://script.google.com/macros/s/AKfycby9tNpjvzIe5UYWj1I-4BNO4cYCWixfgJFCa5Ha1edn0yEzxOo-VF0foSTkcSF0Ief1/exec';
+const DEFAULT_RENTAL_URL = 'https://script.google.com/macros/s/AKfycbxKmc6coGPrUPo5olpHQVLacRL4aX51q9VvQBhZTWs4ODIk-Czy4RKPoiCZBzLNIo-_/exec';
+
+let SERVIS_URL = localStorage.getItem(KEY_SERVIS_URL) || DEFAULT_SERVIS_URL;
+let RENTAL_URL = localStorage.getItem(KEY_RENTAL_URL) || DEFAULT_RENTAL_URL;
 
 // ═══════════════════════════════════════════════════════════════════
 //  STATE
@@ -698,10 +713,11 @@ async function loadServis() {
     servisDayOverrides = d.dayOverrides    || {};
     // E-mail šablóny
     if (d.emailCustomerSubj  !== undefined) document.getElementById('se-customer-subj').value   = d.emailCustomerSubj  || '';
-    if (d.emailCustomerNote  !== undefined) document.getElementById('se-customer-note').value   = d.emailCustomerNote  || '';
+    if (d.emailCustomerBody  !== undefined) document.getElementById('se-customer-body').value   = d.emailCustomerBody  || '';
     if (d.emailAdminSubj     !== undefined) document.getElementById('se-admin-subj').value      = d.emailAdminSubj     || '';
+    if (d.emailAdminBody     !== undefined) document.getElementById('se-admin-body').value      = d.emailAdminBody     || '';
     if (d.serviceConditions  !== undefined) document.getElementById('se-conditions').value      = d.serviceConditions  || '';
-    if (d.thankyouText       !== undefined) { const el=document.getElementById('doc-thankyou-servis'); if(el) el.value = d.thankyouText || ''; }
+    if (d.thankyouHtml       !== undefined) { const el=document.getElementById('doc-thankyou-servis'); if(el) el.value = d.thankyouHtml || ''; }
     setStatus('servis', 'online');
   } catch (e) {
     console.warn('Servis API chyba:', e.message);
@@ -722,9 +738,10 @@ async function loadRental() {
     documents = d.documents || getDefaultDocuments();
     // E-mail šablóny
     if (d.emailCustomerSubj !== undefined) document.getElementById('re-customer-subj').value = d.emailCustomerSubj || '';
-    if (d.emailCustomerNote !== undefined) document.getElementById('re-customer-note').value = d.emailCustomerNote || '';
+    if (d.emailCustomerBody !== undefined) document.getElementById('re-customer-body').value = d.emailCustomerBody || '';
     if (d.emailAdminSubj    !== undefined) document.getElementById('re-admin-subj').value    = d.emailAdminSubj    || '';
-    if (d.thankyouText      !== undefined) { const el=document.getElementById('doc-thankyou-rental'); if(el) el.value = d.thankyouText || ''; }
+    if (d.emailAdminBody    !== undefined) document.getElementById('re-admin-body').value    = d.emailAdminBody    || '';
+    if (d.thankyouHtml      !== undefined) { const el=document.getElementById('doc-thankyou-rental'); if(el) el.value = d.thankyouHtml || ''; }
     setStatus('rental', 'online');
   } catch (e) {
     console.warn('Požičovňa API chyba:', e.message);
@@ -1540,15 +1557,18 @@ async function saveEmailTemplates(system) {
   const url      = isServis ? SERVIS_URL : RENTAL_URL;
   if (!url) return alert('Nie je nastavená API URL pre '+(isServis?'Servis':'Požičovňu')+'.');
 
-  const subj = document.getElementById((isServis?'se':'re')+'-customer-subj').value.trim();
-  const note = document.getElementById((isServis?'se':'re')+'-customer-note').value.trim();
-  const asubj= document.getElementById((isServis?'se':'re')+'-admin-subj').value.trim();
+  const pfx   = isServis ? 'se' : 're';
+  const subj  = document.getElementById(pfx+'-customer-subj').value.trim();
+  const body  = document.getElementById(pfx+'-customer-body').value.trim();
+  const asubj = document.getElementById(pfx+'-admin-subj').value.trim();
+  const abody = document.getElementById(pfx+'-admin-body').value.trim();
 
   try {
     await apiCall(url, 'updateConfig', { config:{
       EMAIL_CUSTOMER_SUBJ: subj,
-      EMAIL_CUSTOMER_NOTE: note,
-      EMAIL_ADMIN_SUBJ:    asubj
+      EMAIL_CUSTOMER_BODY: body,
+      EMAIL_ADMIN_SUBJ:    asubj,
+      EMAIL_ADMIN_BODY:    abody
     }});
     alert('E-mailové šablóny boli uložené!');
   } catch(e) { alert('Chyba: '+e.message); }
@@ -1569,7 +1589,7 @@ async function saveThankyouText(system) {
   const text = document.getElementById('doc-thankyou-'+system).value.trim();
   if (!url) return alert('Nie je nastavená API URL pre '+(isServis?'Servis':'Požičovňu')+'.');
   try {
-    await apiCall(url, 'updateConfig', { config: { THANKYOU_TEXT: text } });
+    await apiCall(url, 'updateConfig', { config: { THANKYOU_HTML: text } });
     alert('Stránka poďakovania bola uložená!');
   } catch(e) { alert('Chyba: '+e.message); }
 }
