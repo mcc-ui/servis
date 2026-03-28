@@ -3,616 +3,628 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Jericho:Bike — Admin</title>
+<title>Servis bicyklov – Jericho:Bike</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* ── JERICHO.BIKE DESIGN SYSTEM ── */
 :root {
+  --green:   #2ECC71;
+  --red:     #cd433d;
+  --bg:      #f4f4f4;
+  --dark:    #1d1d1b;
   --accent:  #cd433d;
   --accent2: #a8332e;
-  --dark:    #1d1d1b;
-  --bg:      #f4f4f4;
   --card:    #ffffff;
   --border:  #e0e0e0;
+  --text:    #1d1d1b;
   --muted:   #757575;
-  --red:     #cd433d;
-  --green:   #16a34a;
-  --blue:    #2563eb;
   --shadow:  0 1px 4px rgba(0,0,0,0.10);
   --radius:  4px;
-  --sidebar: 220px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--dark); font-size: 14px; line-height: 1.55; min-height: 100vh; }
+body { font-family: 'Inter', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.55; }
 
 /* ── LOADING ── */
-#loading-screen { position:fixed;inset:0;background:var(--dark);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .3s; }
-#loading-screen.hidden { opacity:0;pointer-events:none; }
-.loading-logo { font-size:1.5rem;font-weight:700;color:#fff;margin-bottom:6px; }
-.loading-logo span { color:var(--accent); }
-.loading-sub { color:rgba(255,255,255,.4);font-size:.85rem;margin-bottom:28px; }
-.spinner { width:32px;height:32px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .75s linear infinite; }
-@keyframes spin { to { transform:rotate(360deg); } }
+#loading-screen {
+  position: fixed; inset: 0; background: var(--dark);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 9999; transition: opacity 0.3s;
+}
+#loading-screen.hidden { opacity: 0; pointer-events: none; }
+.loading-logo { font-size: 1.5rem; font-weight: 700; color: #fff; margin-bottom: 6px; letter-spacing: -0.3px; }
+.loading-logo span { color: var(--accent); }
+.loading-sub { color: rgba(255,255,255,0.45); font-size: 0.85rem; margin-bottom: 28px; }
+.spinner { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.75s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── LOGIN ── */
-#view-login { display:none;min-height:100vh;align-items:center;justify-content:center;background:var(--dark); }
-#view-login.active { display:flex; }
-.login-box { background:var(--card);border-radius:8px;padding:40px 36px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.25); }
-.login-logo { font-size:1.3rem;font-weight:700;color:var(--dark);margin-bottom:4px; }
-.login-logo span { color:var(--accent); }
-.login-sub { font-size:.82rem;color:var(--muted);margin-bottom:28px; }
-.login-box input { width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:.9rem;outline:none;margin-bottom:12px; }
-.login-box input:focus { border-color:var(--accent); }
-.login-error { color:var(--red);font-size:.82rem;margin-bottom:10px;display:none; }
+/* ── API CONFIG BANNER ── */
+#config-banner {
+  background: #fff8e1; border-bottom: 2px solid #ffc107;
+  padding: 12px 24px; display: none; align-items: center;
+  gap: 12px; font-size: 0.84rem; color: #795548;
+}
+#config-banner.show { display: flex; }
+#config-banner input {
+  flex: 1; padding: 7px 11px; border: 1px solid #ffc107;
+  border-radius: var(--radius); font-family: inherit; font-size: 0.84rem;
+  background: #fff; outline: none;
+}
+#config-banner button { padding: 7px 14px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius); cursor: pointer; font-size: 0.84rem; font-weight: 600; white-space: nowrap; }
+#config-banner button:hover { background: var(--accent2); }
 
-/* ── ADMIN LAYOUT ── */
-#view-admin { display:none; }
-#view-admin.active { display:flex;min-height:100vh; }
-
-/* ── SIDEBAR ── */
-.sidebar { width:var(--sidebar);background:var(--dark);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;bottom:0;left:0;z-index:100;overflow-y:auto; }
-.sidebar-logo { padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08); }
-.sidebar-logo-text { font-size:1rem;font-weight:700;color:#fff; }
-.sidebar-logo-text span { color:var(--accent); }
-.sidebar-logo-sub { font-size:.7rem;color:rgba(255,255,255,.35);margin-top:2px; }
-.sidebar-section { padding:14px 10px 4px;font-size:.62rem;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:.08em;text-transform:uppercase; }
-.sidebar-item { display:flex;align-items:center;gap:9px;padding:9px 14px;color:rgba(255,255,255,.65);cursor:pointer;border-radius:4px;margin:1px 6px;font-size:.84rem;transition:background .15s,color .15s; }
-.sidebar-item:hover { background:rgba(255,255,255,.08);color:#fff; }
-.sidebar-item.active { background:var(--accent);color:#fff; }
-.sidebar-item .si-icon { font-size:1rem;width:20px;text-align:center;flex-shrink:0; }
-.sidebar-footer { margin-top:auto;padding:14px 6px; }
-.sidebar-status { padding:10px 14px;font-size:.72rem; }
-.status-row { display:flex;align-items:center;gap:6px;margin-bottom:4px;color:rgba(255,255,255,.5); }
-.status-dot { width:7px;height:7px;border-radius:50%;background:#6b7280;flex-shrink:0; }
-.status-dot.online { background:#22c55e; }
-.status-dot.error  { background:#ef4444; }
-.status-dot.syncing { background:#f59e0b;animation:pulse .8s infinite; }
-@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
-
-/* ── MAIN ── */
-.main { margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-width:0; }
-.topbar { background:var(--card);border-bottom:1px solid var(--border);padding:0 28px;height:52px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50; }
-.topbar-title { font-size:1rem;font-weight:700;color:var(--dark); }
-.topbar-actions { display:flex;align-items:center;gap:10px; }
-.content { padding:28px;flex:1; }
-
-/* ── PANELS ── */
-.admin-panel { display:none; }
-.admin-panel.active { display:block; }
-.panel-title { font-size:1.15rem;font-weight:700;color:var(--dark);margin-bottom:20px; }
-
-/* ── CARDS / GRIDS ── */
-.card { background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px; }
-.card + .card { margin-top:16px; }
-.stats-row { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:22px; }
-.stat-card { background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px; }
-.stat-val { font-size:1.6rem;font-weight:700;color:var(--dark); }
-.stat-lbl { font-size:.76rem;color:var(--muted);margin-top:2px; }
+/* ── HEADER ── */
+header {
+  background: var(--dark); color: #fff;
+  padding: 0 32px; height: 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 100;
+  border-bottom: 2px solid var(--accent);
+}
+header .logo { display: flex; align-items: center; gap: 10px; font-size: 1.15rem; font-weight: 700; color: #fff; letter-spacing: -0.2px; }
+header .logo img { height: 32px; width: auto; }
+header .nav-btns { display: flex; gap: 8px; align-items: center; }
 
 /* ── BUTTONS ── */
-.btn { display:inline-flex;align-items:center;gap:5px;padding:8px 15px;border-radius:var(--radius);border:none;cursor:pointer;font-family:inherit;font-size:.85rem;font-weight:600;transition:background .15s,opacity .15s; }
-.btn:disabled { opacity:.5;cursor:not-allowed; }
-.btn-primary { background:var(--accent);color:#fff; }
-.btn-primary:hover:not(:disabled) { background:var(--accent2); }
-.btn-dark  { background:var(--dark);color:#fff; }
-.btn-dark:hover:not(:disabled) { background:#333; }
-.btn-ghost  { background:transparent;border:1px solid var(--border);color:var(--dark); }
-.btn-ghost:hover:not(:disabled) { background:#f4f4f4; }
-.btn-red   { background:#fee2e2;color:#991b1b; }
-.btn-red:hover:not(:disabled) { background:#fecaca; }
-.btn-blue  { background:#dbeafe;color:#1e40af; }
-.btn-blue:hover:not(:disabled) { background:#bfdbfe; }
-.btn-sm { padding:5px 10px;font-size:.78rem; }
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 8px 18px; border-radius: var(--radius); border: none;
+  cursor: pointer; font-family: inherit; font-size: 0.84rem;
+  font-weight: 600; transition: background 0.15s, color 0.15s;
+  text-decoration: none; white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.35); }
+.btn-outline:hover { border-color: #fff; background: rgba(255,255,255,0.08); }
+.btn-dark { background: var(--dark); color: #fff; }
+.btn-dark:hover { background: #333; }
+.btn-ghost { background: #fff; color: var(--text); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+.btn-red { background: var(--red); color: #fff; }
+.btn-red:hover { background: #a8332e; }
+.btn-sm { padding: 6px 12px; font-size: 0.78rem; }
 
-/* ── TABLES ── */
-.table-wrap { overflow-x:auto; }
-table { width:100%;border-collapse:collapse; }
-th,td { padding:10px 12px;text-align:left;border-bottom:1px solid var(--border); }
-th { font-size:.76rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;background:#fafafa; }
-td { font-size:.84rem; }
-tr:hover td { background:#fafafa; }
-.badge { display:inline-block;padding:2px 8px;border-radius:3px;font-size:.72rem;font-weight:700; }
-.badge-blue   { background:#dbeafe;color:#1e40af; }
-.badge-green  { background:#dcfce7;color:#15803d; }
-.badge-red    { background:#fee2e2;color:#991b1b; }
-.badge-gray   { background:#f1f5f9;color:#475569; }
-.badge-orange { background:#ffedd5;color:#9a3412; }
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; }
 
-/* ── FORMS ── */
-.form-group { margin-bottom:14px; }
-.form-group label { display:block;font-size:.8rem;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em; }
-.form-group input,.form-group select,.form-group textarea { width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:.88rem;outline:none;background:#fff;color:var(--dark); }
-.form-group input:focus,.form-group select:focus,.form-group textarea:focus { border-color:var(--accent); }
-.form-group textarea { resize:vertical;min-height:80px; }
-.form-row { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
-.fsec { font-size:.8rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border); }
+/* ── CUSTOMER ── */
+.customer-wrap { max-width: 860px; margin: 0 auto; padding: 32px 20px; }
+.section-title { font-size: 1.5rem; font-weight: 700; color: var(--dark); margin-bottom: 6px; letter-spacing: -0.3px; }
+.section-sub { color: var(--muted); font-size: 0.88rem; margin-bottom: 28px; }
 
-/* ── CALENDAR (combined) ── */
-.cal-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:14px; }
-.cal-month-label { font-size:1.1rem;font-weight:700;color:var(--dark); }
-.cal-nav { display:flex;gap:6px; }
-.cal-nav button { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);width:32px;height:32px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center; }
-.cal-nav button:hover { border-color:var(--accent);color:var(--accent); }
-.cal-grid { display:grid;grid-template-columns:repeat(7,1fr);gap:4px; }
-.cal-dow  { text-align:center;font-size:.72rem;font-weight:700;color:var(--muted);padding:6px 0;text-transform:uppercase; }
-.cal-dow.weekend { color:#d1d5db; }
-.cal-cell { min-height:70px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:6px 5px;display:flex;flex-direction:column;gap:3px;cursor:pointer;transition:border-color .15s; }
-.cal-cell:hover { border-color:var(--accent); }
-.cal-cell.empty { background:transparent;border:none;cursor:default; }
-.cal-cell.today { border-color:var(--accent);background:#fff5f5; }
-.cal-cell.weekend { opacity:.4;cursor:default; }
-.cal-cell.holiday { background:#f0f4ff;opacity:.6;cursor:default; }
-.cal-cell.past { opacity:.35;cursor:default; }
-.cal-cell .cn { font-size:.82rem;font-weight:600;color:var(--dark);line-height:1;margin-bottom:2px; }
-.cal-cell.past .cn, .cal-cell.weekend .cn { color:#bbb; }
-.ev-chip { font-size:.58rem;font-weight:700;padding:2px 5px;border-radius:3px;white-space:nowrap;line-height:1.3; }
-.ev-servis   { background:#fee2e2;color:#991b1b; }
-.ev-rental   { background:#dbeafe;color:#1e40af; }
-.ev-holiday  { background:#e0e7ff;color:#3730a3; }
+/* ── CALENDAR ── */
+.calendar-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 32px; border: 1px solid var(--border); }
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.cal-title { font-size: 1.05rem; font-weight: 700; color: var(--dark); }
+.cal-nav { display: flex; gap: 6px; }
+.cal-nav button {
+  width: 32px; height: 32px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: #fff;
+  cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+  color: var(--text);
+}
+.cal-nav button:hover { border-color: var(--accent); color: var(--accent); background: #fff5f5; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.cal-dow { text-align: center; font-size: 0.7rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; padding: 6px 0 8px; }
+.cal-dow.weekend { color: #ccc; }
+.cal-day {
+  border-radius: var(--radius); padding: 8px 4px;
+  cursor: default; transition: all 0.14s; text-align: center;
+  min-width: 0; overflow: hidden;
+  border: 1px solid transparent; min-height: 64px;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: #fff;
+}
+.cal-day.available { cursor: pointer; }
+.cal-day.available:hover { border-color: var(--accent); background: #fff5f5; }
+.cal-day.past { opacity: 0.3; background: #fafafa; }
+.cal-day.empty { background: transparent; pointer-events: none; }
+.cal-day.today { background: #fff5f5; border-color: var(--accent); }
+.cal-day.weekend { background: #fafafa; opacity: 0.45; }
+.cal-day.blocked { background: #fafafa; opacity: 0.5; }
+.cal-day.holiday { background: #f0f4ff; opacity: 0.6; }
+.cal-day .day-num { font-size: 0.88rem; font-weight: 600; color: var(--dark); line-height: 1; }
+.cal-day.past .day-num, .cal-day.weekend .day-num, .cal-day.holiday .day-num { color: #bbb; }
 
-/* ── DAY DETAIL ── */
-.day-detail { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-top:16px; }
-.day-detail-title { font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between; }
-.detail-section { margin-bottom:16px; }
-.detail-section-title { font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px; }
-.detail-item { padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);margin-bottom:6px;font-size:.82rem; }
-.detail-item strong { color:var(--dark); }
-.detail-item .di-sub { color:var(--muted);font-size:.76rem;margin-top:2px; }
+/* Slot badge */
+.slot-badge { font-size: 0.64rem; font-weight: 700; padding: 2px 5px; border-radius: 3px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: block; box-sizing: border-box; }
+.slot-badge.free-2 { background: #dcfce7; color: #15803d; }
+.slot-badge.free-1 { background: #fef9c3; color: #854d0e; }
+.slot-badge.free-0 { background: #fee2e2; color: #991b1b; }
+.slot-badge.closed   { background: #f1f5f9; color: #94a3b8; }
+.slot-badge.holiday  { background: #e0e7ff; color: #3730a3; }
 
-/* ── OVERLAY ── */
-.overlay { position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto; }
-.overlay.open { display:flex; }
-.modal { background:var(--card);border-radius:8px;width:100%;max-width:560px;padding:28px;position:relative;box-shadow:0 8px 40px rgba(0,0,0,.2); }
-.modal-close { position:absolute;top:14px;right:16px;background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:4px; }
-.modal-close:hover { color:var(--dark); }
-.modal-title { font-size:1.05rem;font-weight:700;color:var(--dark);margin-bottom:20px; }
+/* Legend */
+.legend { display: flex; gap: 14px; margin-top: 14px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot { width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0; }
+.legend-dot.green  { background: #22c55e; }
+.legend-dot.yellow { background: #eab308; }
+.legend-dot.red    { background: var(--red); }
+.legend-dot.gray   { background: #d1d5db; }
+.legend-dot.blue   { background: #6366f1; }
 
-/* ── SETTINGS ── */
-.settings-section { margin-bottom:28px; }
-.settings-section-title { font-size:.9rem;font-weight:700;color:var(--dark);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--accent);display:flex;align-items:center;gap:7px; }
-.settings-row { display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);gap:14px; }
-.settings-row label { font-size:.85rem;font-weight:600;color:var(--dark); }
-.settings-row .sr-desc { font-size:.76rem;color:var(--muted);margin-top:2px; }
-.settings-row input { padding:8px 11px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:.85rem;outline:none; }
-.settings-row input:focus { border-color:var(--accent); }
-.blocked-date-tag { display:inline-flex;align-items:center;gap:6px;background:#fee2e2;color:#991b1b;padding:3px 9px;border-radius:3px;font-size:.78rem;font-weight:600;margin:3px; }
-.blocked-date-tag button { background:none;border:none;cursor:pointer;color:#991b1b;font-size:.8rem;padding:0 2px; }
+/* ── OVERLAY & MODAL ── */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; overflow-y: auto; padding: 32px 16px; }
+.overlay.open { display: flex; align-items: flex-start; justify-content: center; }
+.modal {
+  background: var(--card); border-radius: var(--radius);
+  padding: 28px 32px; max-width: 640px; width: 100%;
+  position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  animation: slideUp 0.22s ease; border-top: 3px solid var(--accent);
+}
+@keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.modal-close {
+  position: absolute; top: 14px; right: 14px;
+  width: 30px; height: 30px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: #fff;
+  cursor: pointer; font-size: 1rem;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); transition: all 0.15s;
+}
+.modal-close:hover { background: var(--dark); color: #fff; border-color: var(--dark); }
+.modal-title { font-size: 1.2rem; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+.modal-sub { color: var(--muted); font-size: 0.84rem; margin-bottom: 4px; }
+.modal-date { font-size: 1rem; font-weight: 600; color: var(--accent); margin-bottom: 20px; }
 
-/* ── TABS ── */
-.tab-bar { display:flex;gap:2px;border-bottom:2px solid var(--border);margin-bottom:20px; }
-.tab-btn { padding:8px 18px;font-size:.84rem;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s; }
-.tab-btn:hover { color:var(--dark); }
-.tab-btn.active { color:var(--accent);border-bottom-color:var(--accent); }
-.tab-pane { display:none; }
-.tab-pane.active { display:block; }
+/* Form section label */
+.fsec { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.fsec:first-of-type { margin-top: 4px; }
 
-/* ── SERVIS SLOT BADGES ── */
-.sl-badge { font-size:.6rem;font-weight:700;padding:2px 6px;border-radius:3px;white-space:nowrap; }
-.sl-free  { background:#dcfce7;color:#15803d; }
-.sl-part  { background:#fef9c3;color:#854d0e; }
-.sl-full  { background:#fee2e2;color:#991b1b; }
-.sl-zero  { background:#f1f5f9;color:#64748b; }
-.sl-hol   { background:#e0e7ff;color:#3730a3; }
-.sl-blk   { background:#f1f5f9;color:#94a3b8; }
-.sl-over  { display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:3px;vertical-align:middle; }
+/* ── FORM ── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+@media(max-width:500px) { .form-row { grid-template-columns: 1fr; } }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group.full { grid-column: 1/-1; }
+label { font-size: 0.78rem; font-weight: 600; color: var(--dark); text-transform: uppercase; letter-spacing: 0.4px; }
+input, select, textarea {
+  padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: var(--radius); font-family: inherit;
+  font-size: 0.88rem; color: var(--text);
+  background: #fff; outline: none; transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(205,67,61,0.12); }
+textarea { resize: vertical; min-height: 90px; }
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
 
-/* ── BIKES ADMIN ── */
-.bike-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:10px; }
-.bike-emoji { font-size:1.8rem;flex-shrink:0; }
-.bike-info { flex:1;min-width:0; }
-.bike-name { font-weight:700;color:var(--dark); }
-.bike-meta { font-size:.78rem;color:var(--muted); }
-.bike-actions { display:flex;gap:6px; }
+/* Age warning */
+.age-warning {
+  background: #fff8e1; color: #7a5800; font-size: 0.78rem;
+  padding: 8px 10px; border-radius: var(--radius); margin-top: 6px;
+  border: 1px solid #ffe082; line-height: 1.5;
+}
+/* Checkbox label */
+.checkbox-label { display: flex; align-items: flex-start; gap: 8px; font-size: 0.84rem; cursor: pointer; color: var(--text); line-height: 1.5; }
+.checkbox-label a { color: var(--accent); text-decoration: underline; cursor: pointer; }
+.checkbox-label input[type=checkbox] { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; accent-color: var(--accent); }
+.terms-row { margin-bottom: 14px; }
+/* Add bike button row */
+.add-bike-row { margin: 4px 0 0; }
+.bike2-header { display: flex; justify-content: space-between; align-items: center; }
+.bike2-remove { background: none; border: none; cursor: pointer; font-size: 0.78rem; color: var(--muted); padding: 0; font-family: inherit; }
+.bike2-remove:hover { color: var(--red); }
 
-/* ── EMAIL TEMPLATES ── */
-.email-preview { background:#f9fafb;border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-size:.8rem;margin-top:8px;line-height:1.7; }
-.email-preview h4 { font-size:.82rem;font-weight:700;margin:10px 0 4px; }
-.email-preview p  { margin-bottom:6px; }
+/* ── THANK YOU ── */
+.thankyou-wrap { max-width: 520px; margin: 64px auto; text-align: center; padding: 20px; }
+.thankyou-icon {
+  width: 72px; height: 72px; background: var(--accent);
+  border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 2rem; margin: 0 auto 20px;
+  animation: popIn 0.45s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.thankyou-title { font-size: 1.8rem; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
+.thankyou-text { color: var(--muted); line-height: 1.7; margin-bottom: 28px; font-size: 0.9rem; }
+.thankyou-details { background: var(--card); border-radius: var(--radius); padding: 20px; text-align: left; margin-bottom: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+.detail-row { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 0.86rem; gap: 12px; }
+.detail-row:last-child { border: none; }
+.detail-row .dk { color: var(--muted); flex-shrink: 0; }
+.detail-row .dv { font-weight: 600; color: var(--dark); text-align: right; }
 
-/* ── CONFIG BANNER ── */
-.config-banner { background:#fff8e1;border:1px solid #ffc107;border-radius:var(--radius);padding:14px 18px;margin-bottom:20px;font-size:.84rem;color:#795548; }
-.config-banner h4 { font-size:.88rem;font-weight:700;margin-bottom:8px; }
-.config-banner input { width:100%;padding:8px 11px;border:1px solid #ffc107;border-radius:var(--radius);font-family:inherit;margin:4px 0 8px;outline:none; }
+/* ── ADMIN ── */
+.admin-wrap { display: flex; min-height: calc(100vh - 58px); }
+.admin-sidebar { width: 220px; background: var(--dark); color: #fff; padding: 20px 12px; flex-shrink: 0; }
+.admin-sidebar h3 { font-size: 0.68rem; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: rgba(255,255,255,0.35); margin: 18px 0 8px; padding-left: 10px; }
+.admin-sidebar h3:first-child { margin-top: 0; }
+.sidebar-item { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: var(--radius); cursor: pointer; font-size: 0.85rem; color: rgba(255,255,255,0.65); transition: all 0.15s; margin-bottom: 1px; }
+.sidebar-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+.sidebar-item.active { background: var(--accent); color: #fff; }
+.admin-content { flex: 1; padding: 28px; overflow-y: auto; background: var(--bg); }
+.admin-panel { display: none; }
+.admin-panel.active { display: block; }
+.admin-title { font-size: 1.35rem; font-weight: 700; color: var(--dark); margin-bottom: 3px; }
+.admin-sub { color: var(--muted); font-size: 0.84rem; margin-bottom: 22px; }
+.tab-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
 
-/* ── RESPONSIVE ── */
-@media(max-width:700px){
-  .sidebar { width:100%;height:auto;position:relative;flex-direction:row;flex-wrap:wrap; }
-  .main { margin-left:0; }
-  .form-row { grid-template-columns:1fr; }
+/* TABLE */
+.table-wrap { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border); overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #2d2d2b; color: rgba(255,255,255,0.75); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 11px 14px; text-align: left; white-space: nowrap; }
+td { padding: 11px 14px; font-size: 0.84rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tr:last-child td { border: none; }
+tr:hover td { background: #fff5f5; }
+.badge { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 3px; font-size: 0.72rem; font-weight: 700; }
+.badge-blue { background: #e3f2fd; color: #1565c0; }
+
+/* ADMIN CALENDAR */
+.admin-cal-wrap { display: grid; grid-template-columns: 1fr 280px; gap: 20px; }
+
+/* SETTINGS */
+.settings-card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px; border: 1px solid var(--border); margin-bottom: 18px; }
+.settings-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 16px; color: var(--dark); border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+.settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.settings-row label { min-width: 200px; font-size: 0.84rem; color: var(--dark); font-weight: 500; text-transform: none; letter-spacing: 0; }
+.settings-row input { flex: 1; min-width: 0; }
+.blocked-dates-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.blocked-date-tag { background: #fee2e2; color: #991b1b; padding: 4px 10px 4px 12px; border-radius: 3px; font-size: 0.78rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.blocked-date-tag button { background: none; border: none; color: inherit; cursor: pointer; padding: 0; font-size: 1rem; line-height: 1; opacity: 0.7; }
+.blocked-date-tag button:hover { opacity: 1; }
+
+/* LOGIN */
+.login-wrap { max-width: 380px; margin: 80px auto; padding: 36px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; border: 1px solid var(--border); border-top: 3px solid var(--accent); }
+.login-wrap h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 6px; }
+.login-wrap p { color: var(--muted); font-size: 0.84rem; margin-bottom: 20px; }
+.login-form { display: flex; flex-direction: column; gap: 12px; }
+.error-msg { color: var(--red); font-size: 0.82rem; }
+
+/* SYNC */
+.sync-indicator { display: inline-flex; align-items: center; gap: 5px; font-size: 0.74rem; color: rgba(255,255,255,0.55); }
+.sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+.sync-dot.syncing { background: #ffc107; animation: pulse 0.9s infinite; }
+.sync-dot.error { background: var(--red); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+/* EMBED & IFRAME */
+.in-iframe header, .in-iframe #config-banner { display: none !important; }
+body.embed header, body.embed #config-banner { display: none !important; }
+body.embed { background: transparent; }
+body.embed .customer-wrap { padding-top: 16px; }
+
+@media(max-width:640px) {
+  header { padding: 0 14px; }
+  .customer-wrap, .admin-content { padding: 18px 14px; }
+  .modal { padding: 20px 16px; }
+  .admin-sidebar { display: none; }
+  .admin-cal-wrap { grid-template-columns: 1fr; }
+}
+@media(max-width:420px) {
+  .cal-day { padding: 5px 2px; }
+  .cal-day .day-num { font-size: 0.75rem; }
+  .slot-badge { font-size: 0.55rem; padding: 1px 3px; }
+  .cal-dow { font-size: 0.6rem; letter-spacing: 0; }
 }
 </style>
 </head>
 <body>
 
-<!-- Loading -->
+<!-- LOADING -->
 <div id="loading-screen">
-  <div class="loading-logo">Jericho<span>:Bike</span></div>
-  <div class="loading-sub">Admin — načítavam...</div>
+  <div class="loading-logo">Jericho<span>:Bike</span> Servis</div>
+  <div class="loading-sub">Načítavam dáta...</div>
   <div class="spinner"></div>
 </div>
 
-<!-- Login -->
-<div id="view-login">
-  <div class="login-box">
-    <div class="login-logo">Jericho<span>:Bike</span></div>
-    <div class="login-sub">Zjednotený administrátorský panel</div>
-    <div class="login-error" id="login-error">Nesprávne heslo.</div>
-    <input type="password" id="admin-pass" placeholder="Heslo" onkeydown="if(event.key==='Enter')adminLogin()">
-    <button class="btn btn-dark" style="width:100%" onclick="adminLogin()">Prihlásiť sa →</button>
+<!-- API CONFIG BANNER -->
+<div id="config-banner">
+  ⚠️ <strong>Nastavenie:</strong> Zadajte URL vášho Google Apps Script Web App:
+  <input type="text" id="api-url-input" placeholder="https://script.google.com/macros/s/...../exec">
+  <button onclick="saveApiUrl()">Uložiť a načítať</button>
+</div>
+
+<header>
+  <div class="logo">
+    <img src="https://cdn.myshoptet.com/usr/www.jericho.bike/user/logos/logo-shoptet1.png"
+         alt="Jericho Bike" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+    <span style="display:none;color:#fff;font-weight:700">Jericho<span style="color:var(--accent)">:Bike</span></span>
+    <span style="color:rgba(255,255,255,0.35);margin:0 10px;font-weight:300">|</span>
+    <span style="font-size:0.88rem;font-weight:500;color:rgba(255,255,255,0.7)">Servis</span>
+  </div>
+  <div class="nav-btns">
+    <div class="sync-indicator" id="sync-indicator">
+      <div class="sync-dot" id="sync-dot"></div>
+      <span id="sync-label">Online</span>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="showView('customer')">Rezervácie</button>
+    <button class="btn btn-primary btn-sm" onclick="showAdminEntry()">Admin</button>
+  </div>
+</header>
+
+<!-- ═══ CUSTOMER VIEW ═══ -->
+<div id="view-customer" class="view active">
+  <div class="customer-wrap">
+    <div class="section-title">Objednajte sa do servisu</div>
+    <p class="section-sub">Kliknite na požadovaný dátum a vyplňte kontaktné údaje.</p>
+    <div class="calendar-card">
+      <div class="cal-header">
+        <div class="cal-title" id="cal-month-label"></div>
+        <div class="cal-nav">
+          <button onclick="changeMonth(-1)">‹</button>
+          <button onclick="changeMonth(1)">›</button>
+        </div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot green"></div> Voľné termíny</div>
+        <div class="legend-item"><div class="legend-dot yellow"></div> 1 voľný termín</div>
+        <div class="legend-item"><div class="legend-dot red"></div> Obsadené</div>
+        <div class="legend-item"><div class="legend-dot gray"></div> Víkend / zatvorené</div>
+        <div class="legend-item"><div class="legend-dot blue"></div> Štátny sviatok</div>
+      </div>
+    </div>
   </div>
 </div>
 
-<!-- Admin -->
-<div id="view-admin">
-  <!-- Sidebar -->
-  <div class="sidebar">
-    <div class="sidebar-logo">
-      <div class="sidebar-logo-text">Jericho<span>:Bike</span></div>
-      <div class="sidebar-logo-sub">Admin panel</div>
-    </div>
+<!-- ═══ THANK YOU ═══ -->
+<div id="view-thankyou" class="view">
+  <div class="thankyou-wrap">
+    <div class="thankyou-icon">✓</div>
+    <div class="thankyou-title">Ďakujeme!</div>
+    <p class="thankyou-text">Vaša žiadosť o servisný termín bola úspešne prijatá. Potvrdenie sme poslali na váš e-mail. Čoskoro vás budeme kontaktovať.</p>
+    <div class="thankyou-details" id="thankyou-details"></div>
+    <button class="btn btn-dark" onclick="showView('customer'); refreshData();">← Späť na kalendár</button>
+  </div>
+</div>
 
-    <div class="sidebar-section">Prehľad</div>
-    <div class="sidebar-item active" id="si-overview" onclick="showPanel('overview',this)">
-      <span class="si-icon">📊</span> Prehľad
-    </div>
-
-    <div class="sidebar-section">Rezervácie</div>
-    <div class="sidebar-item" id="si-servis" onclick="showPanel('servis',this)">
-      <span class="si-icon">🔧</span> Servis
-    </div>
-    <div class="sidebar-item" id="si-rental" onclick="showPanel('rental',this)">
-      <span class="si-icon">🚲</span> Požičovňa
-    </div>
-
-    <div class="sidebar-section">Konfigurácia</div>
-    <div class="sidebar-item" id="si-documents" onclick="showPanel('documents',this)">
-      <span class="si-icon">📝</span> Dokumenty
-    </div>
-    <div class="sidebar-item" id="si-emails" onclick="showPanel('emails',this)">
-      <span class="si-icon">✉️</span> E-maily
-    </div>
-    <div class="sidebar-item" id="si-settings" onclick="showPanel('settings',this)">
-      <span class="si-icon">⚙️</span> Nastavenia
-    </div>
-
-    <div class="sidebar-footer">
-      <div class="sidebar-status">
-        <div class="status-row"><div class="status-dot" id="dot-servis"></div><span id="lbl-servis">Servis API</span></div>
-        <div class="status-row"><div class="status-dot" id="dot-rental"></div><span id="lbl-rental">Požičovňa API</span></div>
+<!-- ═══ ADMIN LOGIN ═══ -->
+<div id="view-admin-login" class="view">
+  <div class="login-wrap">
+    <div style="font-size:2.5rem;margin-bottom:12px;">🔐</div>
+    <h2>Admin Panel</h2>
+    <p>Prihláste sa pre správu rezervácií servisu</p>
+    <div class="login-form">
+      <div class="form-group">
+        <label>Heslo</label>
+        <input type="password" id="admin-pass" placeholder="Zadajte heslo" onkeydown="if(event.key==='Enter')adminLogin()">
       </div>
-      <div style="padding:0 6px">
-        <div class="sidebar-item" onclick="adminLogout()"><span class="si-icon">🚪</span> Odhlásiť sa</div>
-      </div>
+      <div id="login-error" class="error-msg" style="display:none">Nesprávne heslo.</div>
+      <button class="btn btn-dark" onclick="adminLogin()">Prihlásiť sa</button>
     </div>
   </div>
+</div>
 
-  <!-- Main -->
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-title" id="topbar-title">Prehľad</div>
-      <div class="topbar-actions">
-        <button class="btn btn-ghost btn-sm" onclick="loadAll()">⟳ Obnoviť</button>
-      </div>
+<!-- ═══ ADMIN VIEW ═══ -->
+<div id="view-admin" class="view">
+  <div class="admin-wrap">
+    <div class="admin-sidebar">
+      <h3>Hlavné menu</h3>
+      <div class="sidebar-item active" onclick="showAdminPanel('reservations',this)">📋 Rezervácie</div>
+      <div class="sidebar-item" onclick="showAdminPanel('calendar',this)">📅 Kalendár</div>
+      <h3>Nastavenia</h3>
+      <div class="sidebar-item" onclick="showAdminPanel('settings',this)">⚙️ Nastavenia</div>
+      <div class="sidebar-item" onclick="showApiConfig()">🔗 Google Sheets API</div>
+      <h3>Účet</h3>
+      <div class="sidebar-item" onclick="adminLogout()">🚪 Odhlásiť sa</div>
     </div>
+    <div class="admin-content">
 
-    <div class="content">
-
-      <!-- ── PANEL: PREHĽAD ── -->
-      <div class="admin-panel active" id="panel-overview">
-        <div id="overview-config-banner" class="config-banner" style="display:none">
-          <h4>⚠️ Nastavte API URL adresy</h4>
-          <p>Pred použitím nastavte URL oboch Google Apps Script nasadení v paneli <strong>Nastavenia</strong>.</p>
-          <button class="btn btn-ghost btn-sm" onclick="showPanel('settings',document.getElementById('si-settings'))">Prejsť na Nastavenia →</button>
-        </div>
-        <div class="stats-row" id="stats-row"></div>
-        <div class="card">
-          <div class="cal-header">
-            <div class="cal-month-label" id="ov-cal-label"></div>
-            <div class="cal-nav">
-              <button onclick="ovCalChange(-1)">‹</button>
-              <button onclick="ovCalChange(1)">›</button>
-            </div>
+      <!-- Panel: Rezervácie -->
+      <div id="panel-reservations" class="admin-panel active">
+        <div class="tab-header">
+          <div>
+            <div class="admin-title">Rezervácie</div>
+            <div class="admin-sub">Zoznam všetkých servisných rezervácií</div>
           </div>
-          <div class="cal-grid" id="ov-cal-grid"></div>
+          <button class="btn btn-primary btn-sm" onclick="openAddReservationModal()">+ Pridať rezerváciu</button>
         </div>
-        <div id="day-detail-wrap"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Dátum</th>
+                <th>Zákazník</th>
+                <th>Kontakt</th>
+                <th>Bicykel</th>
+                <th>Popis problému</th>
+                <th>Akcie</th>
+              </tr>
+            </thead>
+            <tbody id="reservations-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
-      <!-- ── PANEL: SERVIS ── -->
-      <div class="admin-panel" id="panel-servis">
-        <div class="tab-bar">
-          <button class="tab-btn active" id="stab-reservations" onclick="showServisTab('reservations',this)">Rezervácie</button>
-          <button class="tab-btn" id="stab-calendar" onclick="showServisTab('calendar',this)">Kalendár / sloty</button>
-        </div>
-
-        <!-- Tab: rezervácie -->
-        <div class="tab-pane active" id="stab-pane-reservations">
-          <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-            <button class="btn btn-primary btn-sm" onclick="openServisModal(null)">+ Pridať</button>
-          </div>
-          <div class="card">
-            <div class="table-wrap">
-              <table>
-                <thead><tr><th>#</th><th>Dátum</th><th>Zákazník</th><th>Kontakt</th><th>Bicykel</th><th>Popis</th><th></th></tr></thead>
-                <tbody id="servis-tbody"></tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab: kalendár slotov -->
-        <div class="tab-pane" id="stab-pane-calendar">
-          <div class="card">
-            <div class="cal-header">
-              <div class="cal-month-label" id="sc-cal-label"></div>
-              <div class="cal-nav">
-                <button onclick="scCalChange(-1)">‹</button>
-                <button onclick="scCalChange(1)">›</button>
+      <!-- Panel: Kalendár -->
+      <div id="panel-calendar" class="admin-panel">
+        <div class="admin-title">Kalendár obsadenosti</div>
+        <div class="admin-sub">Prehľad využitia servisných termínov</div>
+        <div class="admin-cal-wrap">
+          <div>
+            <div class="calendar-card" style="margin:0">
+              <div class="cal-header">
+                <div class="cal-title" id="admin-cal-month-label"></div>
+                <div class="cal-nav">
+                  <button onclick="adminChangeMonth(-1)">‹</button>
+                  <button onclick="adminChangeMonth(1)">›</button>
+                </div>
               </div>
+              <div class="cal-grid" id="admin-cal-grid"></div>
             </div>
-            <div class="cal-grid" id="sc-cal-grid"></div>
           </div>
-          <div style="margin-top:10px;font-size:.78rem;color:var(--muted)">
-            Kliknite na pracovný deň pre nastavenie počtu dostupných slotov. Bodka <span class="sl-over"></span> označuje deň s individuálnym nastavením.
-          </div>
-        </div>
-      </div>
-
-      <!-- ── PANEL: POŽIČOVŇA ── -->
-      <div class="admin-panel" id="panel-rental">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-          <div class="panel-title" style="margin:0">Rezervácie požičovne</div>
-          <button class="btn btn-primary btn-sm" onclick="openRentalModal(null)">+ Pridať</button>
-        </div>
-        <div class="card">
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>#</th><th>Od – Do</th><th>Zákazník</th><th>Kontakt</th><th>Bicykle</th><th>Dni / Cena</th><th></th>
-                </tr>
-              </thead>
-              <tbody id="rental-tbody"></tbody>
-            </table>
+          <div style="background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;border:1px solid var(--border);">
+            <h4 style="font-weight:700;font-size:0.92rem;margin-bottom:12px;color:var(--dark);">Rezervácie v tomto mesiaci</h4>
+            <div id="admin-cal-res-list"></div>
           </div>
         </div>
       </div>
 
-      <!-- ── PANEL: DOKUMENTY ── -->
-      <div class="admin-panel" id="panel-documents">
-        <div class="panel-title">Dokumenty</div>
+      <!-- Panel: Nastavenia -->
+      <div id="panel-settings" class="admin-panel">
+        <div class="admin-title">Nastavenia</div>
+        <div class="admin-sub">Konfigurácia servisného systému rezervácií</div>
 
-        <div class="settings-section">
-          <div class="settings-section-title">🚲 Požičovňa — dokumenty</div>
-          <div id="documents-editor"></div>
-          <div class="card" style="margin-top:12px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-              <div>
-                <div style="font-size:1rem;font-weight:700">✅ Stránka poďakovania</div>
-                <div style="font-size:.74rem;color:var(--muted);margin-top:2px">Zobrazí sa zákazníkovi po úspešnej rezervácii bicykla</div>
-              </div>
-              <button class="btn btn-primary btn-sm" onclick="saveThankyouText('rental')">💾 Uložiť</button>
-            </div>
-            <div class="form-group">
-              <label>Text / HTML obsah</label>
-              <textarea id="doc-thankyou-rental" rows="5" placeholder="Text alebo HTML, ktorý sa zobrazí zákazníkovi po úspešnej rezervácii požičovne…" style="min-height:100px;font-family:monospace;font-size:.8rem"></textarea>
-            </div>
+        <div class="settings-card">
+          <h3>Základné nastavenia</h3>
+          <div class="settings-row">
+            <label>Admin e-mail (notifikácie)</label>
+            <input type="email" id="cfg-admin-email" placeholder="servis@example.sk">
+          </div>
+          <div class="settings-row">
+            <label>Počet termínov za pracovný deň</label>
+            <input type="number" id="cfg-slots" min="1" max="20" style="width:80px;flex:none">
+          </div>
+          <div style="margin-top:14px;text-align:right">
+            <button class="btn btn-primary btn-sm" onclick="saveSettings()">Uložiť nastavenia</button>
           </div>
         </div>
 
-        <div class="settings-section">
-          <div class="settings-section-title">🔧 Servis — dokumenty</div>
-          <div class="card" style="margin-bottom:12px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-              <div>
-                <div style="font-size:1rem;font-weight:700">📋 Podmienky servisu</div>
-                <div style="font-size:.74rem;color:var(--muted);margin-top:2px">Zákazník musí odškrtnúť súhlas pred odoslaním rezervácie</div>
-              </div>
-              <button class="btn btn-primary btn-sm" onclick="saveServiceConditions()">💾 Uložiť</button>
-            </div>
-            <div class="form-group">
-              <textarea id="se-conditions" rows="8" placeholder="Zadajte text podmienok servisu, ktorý zákazníci uvidia po kliknutí na odkaz v rezervačnom formulári…"></textarea>
-            </div>
+        <div class="settings-card">
+          <h3>Blokované dni</h3>
+          <p style="font-size:0.84rem;color:var(--muted);margin-bottom:14px">Dni, kedy je servis zatvorený (sviatky, dovolenka, školenia…)</p>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+            <input type="date" id="new-blocked-date" style="width:180px;flex:none">
+            <button class="btn btn-dark btn-sm" onclick="addBlockedDate()">+ Pridať deň</button>
           </div>
-          <div class="card">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-              <div>
-                <div style="font-size:1rem;font-weight:700">✅ Stránka poďakovania</div>
-                <div style="font-size:.74rem;color:var(--muted);margin-top:2px">Zobrazí sa zákazníkovi po úspešnom odoslaní objednávky servisu</div>
-              </div>
-              <button class="btn btn-primary btn-sm" onclick="saveThankyouText('servis')">💾 Uložiť</button>
-            </div>
-            <div class="form-group">
-              <label>Text / HTML obsah</label>
-              <textarea id="doc-thankyou-servis" rows="5" placeholder="Text alebo HTML, ktorý sa zobrazí zákazníkovi po úspešnom odoslaní objednávky servisu…" style="min-height:100px;font-family:monospace;font-size:.8rem"></textarea>
-            </div>
-          </div>
+          <div class="blocked-dates-list" id="blocked-dates-list"></div>
         </div>
       </div>
 
-      <!-- ── PANEL: E-MAILY ── -->
-      <div class="admin-panel" id="panel-emails">
-        <div class="panel-title">E-mailové šablóny</div>
-        <p style="font-size:.84rem;color:var(--muted);margin-bottom:22px">Upravte predmety a texty notifikačných e-mailov. Prázdne pole = použije sa predvolený text.</p>
+    </div>
+  </div>
+</div>
 
-        <div class="settings-section">
-          <div class="settings-section-title">🔧 Servis — e-maily</div>
-          <div class="card">
-            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📨 E-mail zákazníkovi</div>
-            <div class="form-group">
-              <label>Predmet</label>
-              <input type="text" id="se-customer-subj" placeholder="napr. Potvrdenie rezervácie servisu — {datum}">
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code>, <code>{telefon}</code>, <code>{email}</code>, <code>{bicykel}</code>, <code>{bicykel2}</code>, <code>{popis}</code>, <code>{tabulka}</code></div>
-            </div>
-            <div class="form-group">
-              <label>HTML telo e-mailu</label>
-              <textarea id="se-customer-body" rows="10" placeholder="Kompletné HTML telo e-mailu zákazníkovi. Použite {tabulka} pre vloženie zhrnutia rezervácie." style="font-family:monospace;font-size:.8rem;min-height:180px"></textarea>
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Ak je prázdne, použije sa predvolená šablóna. Premenné: <code>{datum}</code>, <code>{meno}</code>, <code>{telefon}</code>, <code>{email}</code>, <code>{bicykel}</code>, <code>{bicykel2}</code>, <code>{popis}</code>, <code>{tabulka}</code></div>
-            </div>
-            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:16px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📬 Notifikácia adminovi</div>
-            <div class="form-group">
-              <label>Predmet</label>
-              <input type="text" id="se-admin-subj" placeholder="napr. Nová rezervácia servisu — {meno} — {datum}">
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code></div>
-            </div>
-            <div class="form-group">
-              <label>HTML telo e-mailu adminovi</label>
-              <textarea id="se-admin-body" rows="10" placeholder="Kompletné HTML telo notifikácie adminovi. Použite {tabulka} pre vloženie zhrnutia rezervácie." style="font-family:monospace;font-size:.8rem;min-height:180px"></textarea>
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Ak je prázdne, použije sa predvolená šablóna.</div>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="saveEmailTemplates('servis')">Uložiť šablóny servisu</button>
-          </div>
-        </div>
+<!-- ═══ MODALS ═══ -->
 
-        <div class="settings-section">
-          <div class="settings-section-title">🚲 Požičovňa — e-maily</div>
-          <div class="card">
-            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📨 E-mail zákazníkovi</div>
-            <div class="form-group">
-              <label>Predmet</label>
-              <input type="text" id="re-customer-subj" placeholder="napr. Potvrdenie rezervácie bicykla — {datum}">
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code>, <code>{bicykel}</code>, <code>{tabulka}</code></div>
-            </div>
-            <div class="form-group">
-              <label>HTML telo e-mailu</label>
-              <textarea id="re-customer-body" rows="10" placeholder="Kompletné HTML telo e-mailu zákazníkovi. Použite {tabulka} pre vloženie zhrnutia rezervácie." style="font-family:monospace;font-size:.8rem;min-height:180px"></textarea>
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Ak je prázdne, použije sa predvolená šablóna. Premenné: <code>{datum}</code>, <code>{meno}</code>, <code>{telefon}</code>, <code>{email}</code>, <code>{bicykel}</code>, <code>{tabulka}</code></div>
-            </div>
-            <div style="font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:16px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border)">📬 Notifikácia adminovi</div>
-            <div class="form-group">
-              <label>Predmet</label>
-              <input type="text" id="re-admin-subj" placeholder="napr. Nová rezervácia požičovne — {meno} — {datum}">
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Premenné: <code>{datum}</code>, <code>{meno}</code></div>
-            </div>
-            <div class="form-group">
-              <label>HTML telo e-mailu adminovi</label>
-              <textarea id="re-admin-body" rows="10" placeholder="Kompletné HTML telo notifikácie adminovi. Použite {tabulka} pre vloženie zhrnutia rezervácie." style="font-family:monospace;font-size:.8rem;min-height:180px"></textarea>
-              <div style="font-size:.74rem;color:var(--muted);margin-top:4px">Ak je prázdne, použije sa predvolená šablóna.</div>
-            </div>
-            <button class="btn btn-primary btn-sm" onclick="saveEmailTemplates('rental')">Uložiť šablóny požičovne</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── PANEL: NASTAVENIA ── -->
-      <div class="admin-panel" id="panel-settings">
-        <div class="panel-title">Nastavenia</div>
-
-        <!-- API URLs -->
-        <div class="settings-section">
-          <div class="settings-section-title">🔗 API pripojenia</div>
-          <div class="card">
-            <div class="form-group">
-              <label>Servis — Google Apps Script URL</label>
-              <input type="url" id="cfg-servis-url" placeholder="https://script.google.com/macros/s/...">
-            </div>
-            <div class="form-group">
-              <label>Požičovňa — Google Apps Script URL</label>
-              <input type="url" id="cfg-rental-url" placeholder="https://script.google.com/macros/s/...">
-            </div>
-            <button class="btn btn-dark btn-sm" onclick="saveApiUrls()">Uložiť URL adresy a pripojiť</button>
-          </div>
-        </div>
-
-        <!-- Servis settings -->
-        <div class="settings-section">
-          <div class="settings-section-title">🔧 Servis</div>
-          <div class="card">
-            <div class="settings-row">
-              <div><div style="font-size:.85rem;font-weight:600">Admin e-mail</div><div class="sr-desc">Notifikácia o novej rezervácii</div></div>
-              <input type="email" id="scfg-admin-email" style="width:220px">
-            </div>
-            <div class="settings-row">
-              <div><div style="font-size:.85rem;font-weight:600">Počet termínov za deň</div><div class="sr-desc">Globálne nastavenie slotov</div></div>
-              <input type="number" id="scfg-slots" min="1" max="20" style="width:70px">
-            </div>
-            <div class="settings-row" style="flex-direction:column;align-items:flex-start">
-              <div style="font-size:.85rem;font-weight:600;margin-bottom:10px">Blokované dni</div>
-              <div id="scfg-blocked-list" style="margin-bottom:10px"></div>
-              <div style="display:flex;gap:8px;align-items:center">
-                <input type="date" id="scfg-new-blocked" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit">
-                <button class="btn btn-ghost btn-sm" onclick="addBlockedDate()">+ Pridať</button>
-              </div>
-            </div>
-            <div style="margin-top:16px">
-              <button class="btn btn-primary btn-sm" onclick="saveServisSettings()">Uložiť nastavenia servisu</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Požičovňa — bikes -->
-        <div class="settings-section">
-          <div class="settings-section-title">🚲 Požičovňa — bicykle</div>
-          <div id="bikes-admin-list"></div>
-        </div>
-      </div>
-
-    </div><!-- /content -->
-  </div><!-- /main -->
-</div><!-- /view-admin -->
-
-<!-- ── OVERLAYS ── -->
-
-<!-- Servis modal -->
-<div class="overlay" id="overlay-servis">
+<!-- Rezervačný formulár (zákazník) -->
+<div class="overlay" id="overlay-reservation">
   <div class="modal">
-    <button class="modal-close" onclick="closeOverlay('overlay-servis')">✕</button>
-    <div class="modal-title" id="servis-modal-title">Rezervácia servisu</div>
-    <div id="servis-modal-form"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
-      <button class="btn btn-ghost" onclick="closeOverlay('overlay-servis')">Zrušiť</button>
-      <button class="btn btn-primary" id="servis-save-btn" onclick="saveServisReservation()">Uložiť</button>
+    <button class="modal-close" onclick="closeOverlay('overlay-reservation')">✕</button>
+    <div class="modal-title">Objednávka servisu</div>
+    <div class="modal-sub">Požadovaný termín:</div>
+    <div class="modal-date" id="res-date-label"></div>
+
+    <div class="fsec">Kontaktné údaje</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Meno</label>
+        <input type="text" id="res-meno" placeholder="Meno">
+      </div>
+      <div class="form-group">
+        <label>Priezvisko *</label>
+        <input type="text" id="res-priezvisko" placeholder="Priezvisko">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Telefón *</label>
+        <input type="tel" id="res-telefon" placeholder="+421 900 000 000">
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" id="res-email" placeholder="vas@email.sk">
+      </div>
+    </div>
+
+    <div class="fsec">Informácie o bicykli</div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Značka *</label>
+        <input type="text" id="res-znacka" placeholder="Trek, Specialized, Giant…">
+      </div>
+      <div class="form-group">
+        <label>Model</label>
+        <input type="text" id="res-model" placeholder="Marlin 7, Rockhopper…">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Rok výroby (približný)</label>
+        <input type="number" id="res-rok" placeholder="napr. 2019" min="1980" max="2030" oninput="checkBikeAge(this,'res-rok-warn')">
+        <div id="res-rok-warn" class="age-warning" style="display:none">VPri bicykloch starších ako 15 rokov je pred finálnym potvrdením termínu potrebná krátka obhliadka. O prijatí do servisu nerozhoduje samotný vek bicykla, ale jeho technický stav, bezpečnosť opravy, dostupnosť náhradných dielov a to, či je oprava vzhľadom na stav a hodnotu bicykla ešte rozumná a zmysluplná.
+</div>
+      </div>
+      <div class="form-group"></div>
+    </div>
+
+    <!-- Druhý bicykel -->
+    <div class="add-bike-row" id="bike2-toggle-row">
+      <button type="button" class="btn btn-ghost btn-sm" onclick="toggleBike2()">+ Pridať ďalší bicykel</button>
+    </div>
+    <div id="bike2-section" style="display:none">
+      <div class="fsec bike2-header">
+        <span>Informácie o 2. bicykli</span>
+        <button type="button" class="bike2-remove" onclick="toggleBike2()">✕ Odstrániť</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Značka *</label>
+          <input type="text" id="res-znacka2" placeholder="Trek, Specialized, Giant…">
+        </div>
+        <div class="form-group">
+          <label>Model</label>
+          <input type="text" id="res-model2" placeholder="Marlin 7, Rockhopper…">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Rok výroby (približný)</label>
+          <input type="number" id="res-rok2" placeholder="napr. 2019" min="1980" max="2030" oninput="checkBikeAge(this,'res-rok2-warn')">
+          <div id="res-rok2-warn" class="age-warning" style="display:none">Vzhľadom na vysoký vek bicykla je potrebné bicykel priviezť na obhliadku pred finálnym potvrdením termínu servisu — bicykle po životnosti do servisu neprijímame.</div>
+        </div>
+        <div class="form-group"></div>
+      </div>
+    </div>
+
+    <div class="fsec">Popis problému *</div>
+    <div class="form-group">
+      <textarea id="res-popis" placeholder="Stručne popíšte, čo s bicyklom nie je v poriadku…"></textarea>
+    </div>
+
+    <div class="terms-row">
+      <label class="checkbox-label">
+        <input type="checkbox" id="res-terms-check">
+        <span>Oboznámil som sa s <a onclick="openTermsModal(event)">podmienkami servisu</a></span>
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeOverlay('overlay-reservation')">Zrušiť</button>
+      <button class="btn btn-primary" id="submit-res-btn" onclick="submitReservation()">Odoslať žiadosť →</button>
     </div>
   </div>
 </div>
 
-<!-- Servis day slots modal -->
-<div class="overlay" id="overlay-sc-day">
+<!-- Podmienky servisu -->
+<div class="overlay" id="overlay-terms">
+  <div class="modal" style="max-width:600px">
+    <button class="modal-close" onclick="closeOverlay('overlay-terms')">✕</button>
+    <div class="modal-title">Podmienky servisu</div>
+    <div id="terms-content" style="font-size:0.88rem;line-height:1.75;color:var(--text);margin-top:16px;max-height:60vh;overflow-y:auto"></div>
+    <div class="form-actions" style="margin-top:20px">
+      <button class="btn btn-primary" onclick="closeOverlay('overlay-terms')">Zavrieť</button>
+    </div>
+  </div>
+</div>
+
+<!-- Admin: Nastavenie slotov pre konkrétny deň -->
+<div class="overlay" id="overlay-day-settings">
   <div class="modal" style="max-width:380px">
-    <button class="modal-close" onclick="closeOverlay('overlay-sc-day')">✕</button>
-    <div class="modal-title">Nastavenie slotov</div>
-    <div id="sc-day-label" style="font-size:.88rem;color:var(--muted);margin-bottom:18px"></div>
-    <div style="font-size:.84rem;font-weight:600;margin-bottom:10px">Počet dostupných slotov</div>
-    <div id="sc-day-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
-    <div id="sc-day-info" style="font-size:.78rem;color:var(--muted);min-height:18px"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
-      <button class="btn btn-ghost" onclick="closeOverlay('overlay-sc-day')">Zrušiť</button>
-      <button class="btn btn-primary" id="sc-day-save-btn" onclick="saveScDaySlots()">Uložiť</button>
+    <button class="modal-close" onclick="closeOverlay('overlay-day-settings')">✕</button>
+    <div class="modal-title">Nastavenie dňa</div>
+    <div id="day-settings-date-label" style="font-size:0.9rem;color:var(--muted);margin-bottom:18px"></div>
+    <div style="font-size:0.85rem;color:var(--dark);margin-bottom:10px;font-weight:600">Počet dostupných slotov</div>
+    <div id="day-slot-btns" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px"></div>
+    <div id="day-settings-info" style="font-size:0.78rem;color:var(--muted);min-height:20px"></div>
+    <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeOverlay('overlay-day-settings')">Zrušiť</button>
+      <button class="btn btn-primary" id="save-day-slots-btn" onclick="saveDaySlots()">Uložiť</button>
     </div>
   </div>
 </div>
 
-<!-- Rental modal -->
-<div class="overlay" id="overlay-rental">
+<!-- Admin: Pridať / upraviť rezerváciu -->
+<div class="overlay" id="overlay-admin-res">
   <div class="modal">
-    <button class="modal-close" onclick="closeOverlay('overlay-rental')">✕</button>
-    <div class="modal-title" id="rental-modal-title">Rezervácia požičovne</div>
-    <div id="rental-modal-form"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
-      <button class="btn btn-ghost" onclick="closeOverlay('overlay-rental')">Zrušiť</button>
-      <button class="btn btn-primary" id="rental-save-btn" onclick="saveRentalReservation()">Uložiť</button>
+    <button class="modal-close" onclick="closeOverlay('overlay-admin-res')">✕</button>
+    <div class="modal-title" id="admin-res-title">Pridať rezerváciu</div>
+    <div id="admin-res-form"></div>
+    <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeOverlay('overlay-admin-res')">Zrušiť</button>
+      <button class="btn btn-primary" id="save-admin-res-btn" onclick="saveAdminReservation()">Uložiť</button>
     </div>
-  </div>
-</div>
-
-<!-- Bike edit modal -->
-<div class="overlay" id="overlay-bike">
-  <div class="modal" style="max-width:520px">
-    <button class="modal-close" onclick="closeOverlay('overlay-bike')">✕</button>
-    <div class="modal-title">Upraviť bicykel</div>
-    <div id="bike-edit-form"></div>
-    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
-      <button class="btn btn-ghost" onclick="closeOverlay('overlay-bike')">Zrušiť</button>
-      <button class="btn btn-primary" id="bike-save-btn" onclick="saveBike()">Uložiť zmeny</button>
-    </div>
-  </div>
-</div>
-
-<!-- Document preview modal -->
-<div class="overlay" id="overlay-doc-preview">
-  <div class="modal" style="max-width:620px">
-    <button class="modal-close" onclick="closeOverlay('overlay-doc-preview')">✕</button>
-    <div class="modal-title" id="doc-preview-title"></div>
-    <div id="doc-preview-content" style="font-size:.88rem;line-height:1.7;max-height:60vh;overflow-y:auto"></div>
   </div>
 </div>
 
@@ -621,131 +633,77 @@ tr:hover td { background:#fafafa; }
 //  KONFIGURÁCIA
 // ═══════════════════════════════════════════════════════════════════
 
-// SHA-256 hash hesla (rovnaké ako v servis.html)
-// Zmeniť na: https://emn178.github.io/online-tools/sha256.html
+// SHA-256 hash hesla — samotné heslo tu nie je
+// Vygeneruj hash na: https://emn178.github.io/online-tools/sha256.html
 const ADMIN_PASSWORD_HASH = '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9'; // = admin123
+const API_URL_KEY    = 'servisApiUrl';
 
-const KEY_SERVIS_URL = 'servisApiUrl';
-const KEY_RENTAL_URL = 'bikeRentalApiUrl';
-
-const DEFAULT_SERVIS_URL = 'https://script.google.com/macros/s/AKfycby9tNpjvzIe5UYWj1I-4BNO4cYCWixfgJFCa5Ha1edn0yEzxOo-VF0foSTkcSF0Ief1/exec';
-const DEFAULT_RENTAL_URL = 'https://script.google.com/macros/s/AKfycbxKmc6coGPrUPo5olpHQVLacRL4aX51q9VvQBhZTWs4ODIk-Czy4RKPoiCZBzLNIo-_/exec';
-
-let SERVIS_URL = localStorage.getItem(KEY_SERVIS_URL) || DEFAULT_SERVIS_URL;
-let RENTAL_URL = localStorage.getItem(KEY_RENTAL_URL) || DEFAULT_RENTAL_URL;
+let API_URL = 'https://script.google.com/macros/s/AKfycby9tNpjvzIe5UYWj1I-4BNO4cYCWixfgJFCa5Ha1edn0yEzxOo-VF0foSTkcSF0Ief1/exec';
 
 // ═══════════════════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════════════════
 
-let servisRes    = [];
-let servisBlocked = [];
-let servisSlotsPerDay = 2;
-let servisAdminEmail  = '';
-let servisDayOverrides = {};
+let reservations      = [];
+let blockedDates      = [];
+let slotsPerDay       = 2;
+let adminEmail        = '';
+let dayOverrides      = {};   // { 'yyyy-mm-dd': počet_slotov }
+let serviceConditions = '';
+let thankyouHtml      = '';
 
-let rentalRes  = [];
-let bikes      = [];
-let documents  = {};
-
-let editingServisId = null;
-let editingRentalId = null;
-let editingBikeId   = null;
+let editingResId = null;
 
 const today    = new Date();
 const todayStr = ymd(today);
 
-let ovCalYear  = today.getFullYear();
-let ovCalMonth = today.getMonth();
+let calYear   = today.getFullYear();
+let calMonth  = today.getMonth();
 
-let scCalYear  = today.getFullYear();
-let scCalMonth = today.getMonth();
-let _scDayDate     = null;
-let _scDaySelected = null;
-
-let selectedDay = null;
+let adminCalYear  = today.getFullYear();
+let adminCalMonth = today.getMonth();
 
 // ═══════════════════════════════════════════════════════════════════
 //  API KOMUNIKÁCIA
 // ═══════════════════════════════════════════════════════════════════
 
-function setStatus(system, state) {
-  const dot   = document.getElementById('dot-' + system);
-  const label = document.getElementById('lbl-' + system);
-  dot.className = 'status-dot' + (state === 'online' ? ' online' : state === 'error' ? ' error' : ' syncing');
-  label.textContent = (system === 'servis' ? 'Servis' : 'Požičovňa') + ' — ' +
-    (state === 'online' ? 'Online' : state === 'error' ? 'Chyba' : 'Sync...');
+function setSyncState(state) {
+  const dot   = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  dot.className     = 'sync-dot ' + (state === 'syncing' ? 'syncing' : state === 'error' ? 'error' : '');
+  label.textContent = state === 'syncing' ? 'Synchronizujem...' : state === 'error' ? 'Chyba spojenia' : 'Online';
 }
 
-async function apiCall(url, action, data = {}) {
-  if (!url) throw new Error('URL nie je nastavená');
-  const payload    = encodeURIComponent(JSON.stringify({ action, ...data }));
-  const controller = new AbortController();
-  const timer      = setTimeout(() => controller.abort(), 15000); // 15s timeout
+async function apiCall(action, data = {}) {
+  if (!API_URL) throw new Error('API URL nie je nastavené. Nakonfigurujte Google Sheets v Admin → Google Sheets API.');
+  setSyncState('syncing');
   try {
-    const resp = await fetch(url + '?payload=' + payload, { method: 'GET', signal: controller.signal });
-    const json = await resp.json();
+    const payload = encodeURIComponent(JSON.stringify({ action, ...data }));
+    const url     = API_URL + '?payload=' + payload;
+    const resp    = await fetch(url, { method: 'GET' });
+    const json    = await resp.json();
     if (!json.ok) throw new Error(json.error || 'Chyba servera');
+    setSyncState('online');
     return json.data;
-  } finally {
-    clearTimeout(timer);
+  } catch (err) {
+    setSyncState('error');
+    throw err;
   }
 }
 
-async function loadAll() {
-  const results = await Promise.allSettled([
-    loadServis(),
-    loadRental()
-  ]);
-  renderOverviewCalendar();
-  renderStats();
-}
-
-async function loadServis() {
-  if (!SERVIS_URL) { setStatus('servis', 'error'); return; }
-  setStatus('servis', 'syncing');
+async function refreshData() {
   try {
-    const d = await apiCall(SERVIS_URL, 'getAll');
-    servisRes          = d.reservations    || [];
-    servisSlotsPerDay  = d.slotsPerDay     || 2;
-    servisBlocked      = d.blockedDates    || [];
-    servisAdminEmail   = d.adminEmail      || '';
-    servisDayOverrides = d.dayOverrides    || {};
-    // E-mail šablóny
-    if (d.emailCustomerSubj  !== undefined) document.getElementById('se-customer-subj').value   = d.emailCustomerSubj  || '';
-    if (d.emailCustomerBody  !== undefined) document.getElementById('se-customer-body').value   = d.emailCustomerBody  || '';
-    if (d.emailAdminSubj     !== undefined) document.getElementById('se-admin-subj').value      = d.emailAdminSubj     || '';
-    if (d.emailAdminBody     !== undefined) document.getElementById('se-admin-body').value      = d.emailAdminBody     || '';
-    if (d.serviceConditions  !== undefined) document.getElementById('se-conditions').value      = d.serviceConditions  || '';
-    if (d.thankyouHtml       !== undefined) { const el=document.getElementById('doc-thankyou-servis'); if(el) el.value = d.thankyouHtml || ''; }
-    setStatus('servis', 'online');
+    const data        = await apiCall('getAll');
+    reservations      = data.reservations || [];
+    slotsPerDay       = data.slotsPerDay  || 2;
+    blockedDates      = data.blockedDates || [];
+    adminEmail        = data.adminEmail   || '';
+    dayOverrides      = data.dayOverrides || {};
+    if (data.serviceConditions !== undefined) serviceConditions = data.serviceConditions || '';
+    if (data.thankyouHtml      !== undefined) thankyouHtml      = data.thankyouHtml      || '';
+    renderCalendar();
   } catch (e) {
-    console.warn('Servis API chyba:', e.message);
-    setStatus('servis', 'error');
-  }
-}
-
-async function loadRental() {
-  if (!RENTAL_URL) { setStatus('rental', 'error'); return; }
-  setStatus('rental', 'syncing');
-  try {
-    const d = await apiCall(RENTAL_URL, 'getAll');
-    rentalRes = d.reservations || [];
-    bikes     = (d.bikes || []).map(b => {
-      if (typeof b.pricing === 'string') { try { b.pricing = JSON.parse(b.pricing); } catch { b.pricing = []; } }
-      return b;
-    });
-    documents = d.documents || getDefaultDocuments();
-    // E-mail šablóny
-    if (d.emailCustomerSubj !== undefined) document.getElementById('re-customer-subj').value = d.emailCustomerSubj || '';
-    if (d.emailCustomerBody !== undefined) document.getElementById('re-customer-body').value = d.emailCustomerBody || '';
-    if (d.emailAdminSubj    !== undefined) document.getElementById('re-admin-subj').value    = d.emailAdminSubj    || '';
-    if (d.emailAdminBody    !== undefined) document.getElementById('re-admin-body').value    = d.emailAdminBody    || '';
-    if (d.thankyouHtml      !== undefined) { const el=document.getElementById('doc-thankyou-rental'); if(el) el.value = d.thankyouHtml || ''; }
-    setStatus('rental', 'online');
-  } catch (e) {
-    console.warn('Požičovňa API chyba:', e.message);
-    setStatus('rental', 'error');
+    console.warn('Chyba načítania:', e.message);
   }
 }
 
@@ -753,26 +711,23 @@ async function loadRental() {
 //  NAVIGÁCIA
 // ═══════════════════════════════════════════════════════════════════
 
-function showPanel(name, el) {
-  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
-  document.getElementById('panel-' + name).classList.add('active');
-  if (el) el.classList.add('active');
-  const titles = { overview:'Prehľad', servis:'Servis', rental:'Požičovňa', documents:'Dokumenty', emails:'E-maily', settings:'Nastavenia' };
-  document.getElementById('topbar-title').textContent = titles[name] || '';
-  if (name === 'servis')    { renderServisTable(); renderScCal(); }
-  if (name === 'rental')    renderRentalTable();
-  if (name === 'documents') renderDocumentsEditor();
-  if (name === 'settings')  renderSettingsPanel();
-  if (name === 'overview')  { renderOverviewCalendar(); renderStats(); }
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  if (name === 'customer') { renderCalendar(); refreshData(); }
 }
 
-function openOverlay(id)  { document.getElementById(id).classList.add('open'); }
-function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+function openOverlay(id)  { document.getElementById(id).classList.add('open');    reportHeight(); }
+function closeOverlay(id) { document.getElementById(id).classList.remove('open'); reportHeight(); }
 
-// ═══════════════════════════════════════════════════════════════════
-//  LOGIN
-// ═══════════════════════════════════════════════════════════════════
+function showAdminEntry() {
+  if (sessionStorage.getItem('adminLoggedIn') === '1') {
+    showView('admin');
+    renderReservationsTable();
+  } else {
+    showView('admin-login');
+  }
+}
 
 async function adminLogin() {
   const pass    = document.getElementById('admin-pass').value;
@@ -782,9 +737,8 @@ async function adminLogin() {
   if (hash === ADMIN_PASSWORD_HASH) {
     sessionStorage.setItem('adminLoggedIn', '1');
     document.getElementById('login-error').style.display = 'none';
-    document.getElementById('view-login').classList.remove('active');
-    document.getElementById('view-admin').classList.add('active');
-    loadAll();
+    showView('admin');
+    renderReservationsTable();
   } else {
     document.getElementById('login-error').style.display = 'block';
   }
@@ -792,8 +746,32 @@ async function adminLogin() {
 
 function adminLogout() {
   sessionStorage.removeItem('adminLoggedIn');
-  document.getElementById('view-admin').classList.remove('active');
-  document.getElementById('view-login').classList.add('active');
+  showView('customer');
+}
+
+function showAdminPanel(name, el) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  if (name === 'reservations') renderReservationsTable();
+  if (name === 'calendar')     renderAdminCalendar();
+  if (name === 'settings')     renderSettings();
+}
+
+function showApiConfig() {
+  const banner = document.getElementById('config-banner');
+  banner.classList.toggle('show');
+  if (API_URL) document.getElementById('api-url-input').value = API_URL;
+}
+
+function saveApiUrl() {
+  const val = document.getElementById('api-url-input').value.trim();
+  if (!val) return alert('Zadajte URL.');
+  API_URL = val;
+  localStorage.setItem(API_URL_KEY, val);
+  document.getElementById('config-banner').classList.remove('show');
+  init();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -802,253 +780,131 @@ function adminLogout() {
 
 function ymd(d) {
   const dt = typeof d === 'string' ? new Date(d + 'T12:00:00') : d;
-  return dt.toISOString().slice(0,10);
+  return dt.toISOString().slice(0, 10);
 }
 
 function fmtDate(d) {
   if (!d) return '';
-  return new Date(d + 'T12:00:00').toLocaleDateString('sk-SK', { day:'2-digit', month:'2-digit', year:'numeric' });
+  return new Date(d + 'T12:00:00').toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 function fmtDateLong(d) {
   if (!d) return '';
-  const dt = new Date(d + 'T12:00:00');
+  const dt     = new Date(d + 'T12:00:00');
   const days   = ['nedeľa','pondelok','utorok','streda','štvrtok','piatok','sobota'];
   const months = ['januára','februára','marca','apríla','mája','júna','júla','augusta','septembra','októbra','novembra','decembra'];
   return days[dt.getDay()] + ', ' + dt.getDate() + '. ' + months[dt.getMonth()] + ' ' + dt.getFullYear();
 }
 
-function getDayName(d) {
+function getDayName(dateStr) {
   const days = ['nedeľa','pondelok','utorok','streda','štvrtok','piatok','sobota'];
-  return days[new Date(d + 'T12:00:00').getDay()];
+  return days[new Date(dateStr + 'T12:00:00').getDay()];
 }
 
-function isWeekend(d) {
-  const dow = new Date(d + 'T12:00:00').getDay();
+function isWeekend(dateStr) {
+  const dow = new Date(dateStr + 'T12:00:00').getDay();
   return dow === 0 || dow === 6;
 }
 
-function escHtml(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+// ─── Štátne sviatky SR ───────────────────────────────────────────
 
-// Sviatky SR
 function easterSunday(year) {
-  const a=year%19,b=Math.floor(year/100),c=year%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25);
-  const g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4;
-  const l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451);
-  const month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1;
-  return new Date(year,month-1,day);
+  // Anonymný gregoriánsky algoritmus
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3), h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day   = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
 }
-const _hCache = {};
+
+function getSlovakHolidays(year) {
+  const holidays = {};
+  function add(month, day, name) {
+    const key = year + '-' + String(month).padStart(2,'0') + '-' + String(day).padStart(2,'0');
+    holidays[key] = name;
+  }
+  // Pevné sviatky
+  add(1,  1,  'Deň vzniku SR');
+  add(1,  6,  'Traja králi');
+  add(5,  1,  'Sviatok práce');
+  add(5,  8,  'Deň víťazstva');
+  add(7,  5,  'Cyril a Metod');
+  add(8,  29, 'Výročie SNP');
+  add(9,  1,  'Deň Ústavy SR');
+  add(9,  15, 'Sedembolestná P. Mária');
+  add(11, 1,  'Sviatok všetkých svätých');
+  add(11, 17, 'Deň boja za slobodu');
+  add(12, 24, 'Štedrý deň');
+  add(12, 25, '1. sviatok vianočný');
+  add(12, 26, '2. sviatok vianočný');
+  // Pohyblivé sviatky (Veľká noc)
+  const easter = easterSunday(year);
+  const gf = new Date(easter); gf.setDate(easter.getDate() - 2); // Veľký piatok
+  const em = new Date(easter); em.setDate(easter.getDate() + 1); // Veľkonočný pondelok
+  [gf, em].forEach((d, i) => {
+    const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    holidays[key] = i === 0 ? 'Veľký piatok' : 'Veľkonočný pondelok';
+  });
+  return holidays;
+}
+
+// Cache sviatkov podľa roku
+const _holidayCache = {};
 function getHolidaysForYear(year) {
-  if (_hCache[year]) return _hCache[year];
-  const h = {};
-  const add = (m,d,n) => { h[year+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0')]=n; };
-  add(1,1,'Deň vzniku SR'); add(1,6,'Traja králi'); add(5,1,'Sviatok práce');
-  add(5,8,'Deň víťazstva'); add(7,5,'Cyril a Metod'); add(8,29,'Výročie SNP');
-  add(9,1,'Deň Ústavy SR'); add(9,15,'Sedembolestná P. Mária'); add(11,1,'Všetkých svätých');
-  add(11,17,'Deň boja za slobodu'); add(12,24,'Štedrý deň'); add(12,25,'1. sviatok vianočný'); add(12,26,'2. sviatok vianočný');
-  const easter=easterSunday(year);
-  const gf=new Date(easter); gf.setDate(easter.getDate()-2);
-  const em=new Date(easter); em.setDate(easter.getDate()+1);
-  [gf,em].forEach((dt,i)=>{ const k=dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0')+'-'+String(dt.getDate()).padStart(2,'0'); h[k]=i===0?'Veľký piatok':'Veľkonočný pondelok'; });
-  return (_hCache[year]=h);
-}
-function getHolidayName(d) { return getHolidaysForYear(parseInt(d))[d]||null; }
-function isHoliday(d) { return !!getHolidayName(d); }
-
-// ═══════════════════════════════════════════════════════════════════
-//  ŠTATISTIKY
-// ═══════════════════════════════════════════════════════════════════
-
-function renderStats() {
-  const futureServis  = servisRes.filter(r => r.datum >= todayStr).length;
-  const pastServis    = servisRes.filter(r => r.datum < todayStr).length;
-  const futureRental  = rentalRes.filter(r => r.to >= todayStr).length;
-  const activeRentals = rentalRes.filter(r => r.from <= todayStr && r.to >= todayStr).length;
-
-  document.getElementById('stats-row').innerHTML =
-    stat(futureServis,  'Nadchádzajúce servisy', 'badge-red') +
-    stat(activeRentals, 'Aktívne požičovne dnes','badge-blue') +
-    stat(futureRental,  'Budúce požičovne',      'badge-blue') +
-    stat(servisRes.length + rentalRes.length, 'Rezervácií celkom', 'badge-gray');
+  if (!_holidayCache[year]) _holidayCache[year] = getSlovakHolidays(year);
+  return _holidayCache[year];
 }
 
-function stat(val, lbl, cls) {
-  return '<div class="stat-card"><div class="stat-val">' + val + '</div><div class="stat-lbl">' + lbl + '</div></div>';
+function getHolidayName(dateStr) {
+  const year = parseInt(dateStr.slice(0, 4));
+  return getHolidaysForYear(year)[dateStr] || null;
+}
+
+function isHoliday(dateStr) {
+  return !!getHolidayName(dateStr);
+}
+
+function isBlocked(dateStr) {
+  return blockedDates.includes(dateStr);
+}
+
+function getUsedSlots(dateStr) {
+  return reservations.filter(r => r.datum === dateStr).length;
+}
+
+// Vráti max. počet slotov pre daný deň — berie ohľad na denný override
+function getMaxSlots(dateStr) {
+  return (dayOverrides[dateStr] !== undefined) ? dayOverrides[dateStr] : slotsPerDay;
+}
+
+function getFreeSlots(dateStr) {
+  return Math.max(0, getMaxSlots(dateStr) - getUsedSlots(dateStr));
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  PREHĽAD — KOMBINOVANÝ KALENDÁR
+//  KALENDÁR (zákazník)
 // ═══════════════════════════════════════════════════════════════════
 
 const MONTHS_SK = ['Január','Február','Marec','Apríl','Máj','Jún','Júl','August','September','Október','November','December'];
 const DAYS_SK   = ['Po','Ut','St','Št','Pi','So','Ne'];
 
-function ovCalChange(delta) {
-  ovCalMonth += delta;
-  if (ovCalMonth > 11) { ovCalMonth = 0; ovCalYear++; }
-  if (ovCalMonth < 0)  { ovCalMonth = 11; ovCalYear--; }
-  selectedDay = null;
-  document.getElementById('day-detail-wrap').innerHTML = '';
-  renderOverviewCalendar();
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0)  { calMonth = 11; calYear--; }
+  renderCalendar();
 }
 
-function servisCountForDay(dtStr) {
-  return servisRes.filter(r => r.datum === dtStr).length;
-}
-function rentalCountForDay(dtStr) {
-  return rentalRes
-    .filter(r => r.from <= dtStr && r.to >= dtStr)
-    .reduce((sum, r) => sum + (r.bikeIds || []).length, 0);
-}
-
-function renderOverviewCalendar() {
-  document.getElementById('ov-cal-label').textContent = MONTHS_SK[ovCalMonth] + ' ' + ovCalYear;
-  const grid = document.getElementById('ov-cal-grid');
+function renderCalendar() {
+  document.getElementById('cal-month-label').textContent = MONTHS_SK[calMonth] + ' ' + calYear;
+  const grid = document.getElementById('cal-grid');
   grid.innerHTML = '';
 
-  DAYS_SK.forEach((d,i) => {
-    const el = document.createElement('div');
-    el.className = 'cal-dow' + (i>=5?' weekend':'');
-    el.textContent = d;
-    grid.appendChild(el);
-  });
-
-  const firstDay    = new Date(ovCalYear, ovCalMonth, 1);
-  const startOffset = (firstDay.getDay() + 6) % 7;
-  for (let i=0;i<startOffset;i++) {
-    const el=document.createElement('div'); el.className='cal-cell empty'; grid.appendChild(el);
-  }
-
-  const daysInMonth = new Date(ovCalYear, ovCalMonth+1, 0).getDate();
-  for (let day=1; day<=daysInMonth; day++) {
-    const dtStr  = ovCalYear+'-'+String(ovCalMonth+1).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-    const isPast = dtStr < todayStr;
-    const isWknd = isWeekend(dtStr);
-    const isHol  = isHoliday(dtStr);
-    const sCount = servisCountForDay(dtStr);
-    const rCount = rentalCountForDay(dtStr);
-    const isToday = dtStr === todayStr;
-    const isSel   = dtStr === selectedDay;
-
-    const el = document.createElement('div');
-    let cls = 'cal-cell';
-    if (isWknd)   cls += ' weekend';
-    else if (isHol) cls += ' holiday';
-    else if (isPast && !sCount && !rCount) cls += ' past';
-    if (isToday)  cls += ' today';
-    if (isSel)    cls += ' today'; // highlight selected
-    el.className = cls;
-
-    const cn = document.createElement('div');
-    cn.className = 'cn';
-    cn.textContent = day;
-    el.appendChild(cn);
-
-    if (isHol) {
-      const chip = document.createElement('div');
-      chip.className='ev-chip ev-holiday'; chip.textContent=getHolidayName(dtStr); el.appendChild(chip);
-    }
-    if (sCount > 0) {
-      const chip = document.createElement('div');
-      chip.className='ev-chip ev-servis'; chip.textContent=sCount+'× servis'; el.appendChild(chip);
-    }
-    if (rCount > 0) {
-      const chip = document.createElement('div');
-      chip.className='ev-chip ev-rental'; chip.textContent=rCount+'× bicykel požičovňa'; el.appendChild(chip);
-    }
-
-    if (!isWknd && !isHol) {
-      el.onclick = () => showDayDetail(dtStr);
-    }
-    grid.appendChild(el);
-  }
-}
-
-function showDayDetail(dtStr) {
-  selectedDay = dtStr;
-  renderOverviewCalendar(); // re-render to highlight
-
-  const sItems = servisRes.filter(r => r.datum === dtStr);
-  const rItems = rentalRes.filter(r => r.from <= dtStr && r.to >= dtStr);
-
-  let html = '<div class="day-detail">';
-  html += '<div class="day-detail-title"><span>' + fmtDateLong(dtStr) + '</span><button class="btn btn-ghost btn-sm" onclick="selectedDay=null;document.getElementById(\'day-detail-wrap\').innerHTML=\'\'">✕</button></div>';
-
-  if (!sItems.length && !rItems.length) {
-    html += '<div style="color:var(--muted);font-size:.85rem">Žiadne rezervácie pre tento deň.</div>';
-  }
-
-  if (sItems.length) {
-    html += '<div class="detail-section"><div class="detail-section-title">🔧 Servis (' + sItems.length + ')</div>';
-    sItems.forEach(r => {
-      const bike = [r.znacka, r.model, r.rokVyroby?'('+r.rokVyroby+')':''].filter(Boolean).join(' ');
-      html += '<div class="detail-item">' +
-        '<strong>' + escHtml(r.meno) + ' ' + escHtml(r.priezvisko) + '</strong>' +
-        '<div class="di-sub">' + escHtml(r.telefon||'') + (r.email?' · '+escHtml(r.email):'') + '</div>' +
-        (bike?'<div class="di-sub" style="color:var(--accent)">'+escHtml(bike)+'</div>':'') +
-        (r.popis?'<div class="di-sub">'+escHtml(r.popis)+'</div>':'') +
-      '</div>';
-    });
-    html += '</div>';
-  }
-
-  if (rItems.length) {
-    html += '<div class="detail-section"><div class="detail-section-title">🚲 Požičovňa (' + rItems.length + ')</div>';
-    rItems.forEach(r => {
-      const bikeNames = (r.bikeIds||[]).map(id => bikes.find(b=>b.id===id)?.name||id).join(', ');
-      html += '<div class="detail-item">' +
-        '<strong>' + escHtml(r.name) + ' ' + escHtml(r.surname) + '</strong>' +
-        '<div class="di-sub">' + escHtml(r.phone||'') + (r.email?' · '+escHtml(r.email):'') + '</div>' +
-        '<div class="di-sub">' + fmtDate(r.from) + ' – ' + fmtDate(r.to) + ' · ' + (r.days||'?') + ' dní · ' + (r.total?r.total+'€':'') + '</div>' +
-        (bikeNames?'<div class="di-sub" style="color:var(--blue)">'+escHtml(bikeNames)+'</div>':'') +
-      '</div>';
-    });
-    html += '</div>';
-  }
-
-  html += '</div>';
-  document.getElementById('day-detail-wrap').innerHTML = html;
-  document.getElementById('day-detail-wrap').scrollIntoView({ behavior:'smooth', block:'nearest' });
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  SERVIS — TABS + KALENDÁR SLOTOV
-// ═══════════════════════════════════════════════════════════════════
-
-function showServisTab(name, el) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-  if (el) el.classList.add('active');
-  document.getElementById('stab-pane-' + name).classList.add('active');
-  if (name === 'calendar') renderScCal();
-}
-
-function scCalChange(delta) {
-  scCalMonth += delta;
-  if (scCalMonth > 11) { scCalMonth = 0; scCalYear++; }
-  if (scCalMonth < 0)  { scCalMonth = 11; scCalYear--; }
-  renderScCal();
-}
-
-function scGetMaxSlots(dateStr) {
-  return (servisDayOverrides[dateStr] !== undefined) ? servisDayOverrides[dateStr] : servisSlotsPerDay;
-}
-function scGetUsed(dateStr) {
-  return servisRes.filter(r => r.datum === dateStr).length;
-}
-function scGetFree(dateStr) {
-  return Math.max(0, scGetMaxSlots(dateStr) - scGetUsed(dateStr));
-}
-
-function renderScCal() {
-  document.getElementById('sc-cal-label').textContent = MONTHS_SK[scCalMonth] + ' ' + scCalYear;
-  const grid = document.getElementById('sc-cal-grid');
-  grid.innerHTML = '';
-
-  const DAYS_SK = ['Po','Ut','St','Št','Pi','So','Ne'];
+  // Hlavičky dní
   DAYS_SK.forEach((d, i) => {
     const el = document.createElement('div');
     el.className = 'cal-dow' + (i >= 5 ? ' weekend' : '');
@@ -1056,714 +912,610 @@ function renderScCal() {
     grid.appendChild(el);
   });
 
-  const firstDay    = new Date(scCalYear, scCalMonth, 1);
+  // Odsadenie prvého dňa (Pondelok = 0)
+  const firstDay    = new Date(calYear, calMonth, 1);
   const startOffset = (firstDay.getDay() + 6) % 7;
   for (let i = 0; i < startOffset; i++) {
-    const el = document.createElement('div'); el.className = 'cal-cell empty'; grid.appendChild(el);
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
   }
 
-  const daysInMonth = new Date(scCalYear, scCalMonth + 1, 0).getDate();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
   for (let day = 1; day <= daysInMonth; day++) {
-    const dtStr   = scCalYear + '-' + String(scCalMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const dtStr   = calYear + '-' + String(calMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const isPast  = dtStr < todayStr;
     const isWknd  = isWeekend(dtStr);
+    const isBlk   = isBlocked(dtStr);
     const isHol   = isHoliday(dtStr);
-    const isBlk   = servisBlocked.includes(dtStr);
-    const used    = scGetUsed(dtStr);
-    const maxSl   = scGetMaxSlots(dtStr);
-    const free    = scGetFree(dtStr);
-    const hasOver = servisDayOverrides[dtStr] !== undefined;
+    const free    = getFreeSlots(dtStr);
     const isToday = dtStr === todayStr;
 
     const el = document.createElement('div');
-    let cls = 'cal-cell';
-    if (isWknd)                         cls += ' weekend';
-    else if (isHol)                     cls += ' holiday';
-    else if (dtStr < todayStr)          cls += '';  // past — stále klikateľné v admin
-    if (isToday)                        cls += ' today';
+    let cls = 'cal-day';
+    if (isPast)                                    cls += ' past';
+    else if (isWknd)                               cls += ' weekend';
+    else if (isHol)                                cls += ' holiday';
+    else if (isBlk || free === 0)                  cls += ' full';
+    else                                           cls += ' available';
+    if (isToday && !isPast && !isHol)              cls += ' today';
     el.className = cls;
 
-    if (!isWknd && !isHol) {
-      el.style.cursor = 'pointer';
-      el.title = 'Nastaviť sloty pre ' + dtStr;
-      el.onclick = () => openScDayModal(dtStr);
-    } else {
-      el.style.cursor = 'default';
-    }
+    const numEl = document.createElement('div');
+    numEl.className = 'day-num';
+    numEl.textContent = day;
+    el.appendChild(numEl);
 
-    const cn = document.createElement('div');
-    cn.className = 'cn';
-    cn.textContent = day;
-    if (hasOver) {
-      const dot = document.createElement('span');
-      dot.className = 'sl-over';
-      cn.appendChild(dot);
-    }
-    el.appendChild(cn);
-
-    if (!isWknd) {
+    // Slot badge — len pre pracovné dni v budúcnosti
+    if (!isPast && !isWknd) {
       const badge = document.createElement('div');
       if (isHol) {
-        badge.className = 'sl-badge sl-hol'; badge.textContent = getHolidayName(dtStr);
+        badge.className = 'slot-badge holiday';
+        badge.textContent = 'Sviatok';
       } else if (isBlk) {
-        badge.className = 'sl-badge sl-blk'; badge.textContent = 'Zatv.';
-      } else if (maxSl === 0) {
-        badge.className = 'sl-badge sl-zero'; badge.textContent = '0 slotov';
+        badge.className = 'slot-badge closed';
+        badge.textContent = 'Zatvorené';
       } else if (free === 0) {
-        badge.className = 'sl-badge sl-full'; badge.textContent = used + '/' + maxSl;
-      } else if (used > 0) {
-        badge.className = 'sl-badge sl-part'; badge.textContent = used + '/' + maxSl;
+        badge.className = 'slot-badge free-0';
+        badge.textContent = 'Obsadené';
+      } else if (free === 1) {
+        badge.className = 'slot-badge free-1';
+        badge.textContent = '1 voľný';
       } else {
-        badge.className = 'sl-badge sl-free'; badge.textContent = '0/' + maxSl;
+        badge.className = 'slot-badge free-2';
+        badge.textContent = 'Voľné';
       }
       el.appendChild(badge);
+    }
+
+    if (!isPast && !isWknd && !isHol && !isBlk && free > 0) {
+      el.onclick = () => openReservationModal(dtStr);
     }
     grid.appendChild(el);
   }
 }
 
-function openScDayModal(dateStr) {
-  _scDayDate     = dateStr;
-  _scDaySelected = servisDayOverrides[dateStr] !== undefined ? servisDayOverrides[dateStr] : null;
-  document.getElementById('sc-day-label').textContent = fmtDateLong(dateStr);
-  _renderScDayBtns();
-  openOverlay('overlay-sc-day');
-}
+// ═══════════════════════════════════════════════════════════════════
+//  REZERVAČNÝ FORMULÁR (zákazník)
+// ═══════════════════════════════════════════════════════════════════
 
-function _renderScDayBtns() {
-  const used      = scGetUsed(_scDayDate);
-  const container = document.getElementById('sc-day-btns');
-  container.innerHTML = '';
-
-  // Tlačidlo Štandard
-  const defBtn = document.createElement('button');
-  defBtn.className = 'btn btn-sm ' + (_scDaySelected === null ? 'btn-primary' : 'btn-ghost');
-  defBtn.style.cssText = 'min-width:60px;font-size:.8rem';
-  defBtn.textContent = 'Štandard (' + servisSlotsPerDay + ')';
-  defBtn.onclick = () => { _scDaySelected = null; _renderScDayBtns(); };
-  container.appendChild(defBtn);
-
-  // Čísla 0 … max
-  const maxShow = Math.max(servisSlotsPerDay + 2, 6);
-  for (let n = 0; n <= maxShow; n++) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-sm ' + (_scDaySelected === n ? 'btn-primary' : 'btn-ghost');
-    btn.style.cssText = 'min-width:40px;font-size:.85rem';
-    btn.textContent = n === 0 ? '0 ✕' : String(n);
-    if (n < used) { btn.disabled = true; btn.title = 'Nemožno — deň má ' + used + ' rezerv.'; }
-    const val = n;
-    btn.onclick = () => { _scDaySelected = val; _renderScDayBtns(); };
-    container.appendChild(btn);
-  }
-
-  // Info text
-  const info = document.getElementById('sc-day-info');
-  if (_scDaySelected === null) {
-    info.textContent = 'Použije sa globálne nastavenie (' + servisSlotsPerDay + ' slotov / deň).';
-  } else if (_scDaySelected === 0) {
-    info.textContent = 'Deň bude uzatvorený — žiadne nové rezervácie.';
+function checkBikeAge(input, warnId) {
+  const rok  = parseInt(input.value);
+  const warn = document.getElementById(warnId);
+  if (rok && !isNaN(rok) && (new Date().getFullYear() - rok) > 15) {
+    warn.style.display = 'block';
   } else {
-    const f = Math.max(0, _scDaySelected - used);
-    info.textContent = 'Celkom ' + _scDaySelected + ' slotov · ' + used + ' obsadené · ' + f + ' voľné.';
+    warn.style.display = 'none';
   }
 }
 
-async function saveScDaySlots() {
-  if (!_scDayDate) return;
-  if (!SERVIS_URL) return alert('Nie je nastavené Servis API URL.');
-  const btn = document.getElementById('sc-day-save-btn');
-  btn.disabled = true; btn.textContent = 'Ukladám...';
-
-  const newOverrides = { ...servisDayOverrides };
-  if (_scDaySelected === null) {
-    delete newOverrides[_scDayDate];
+function toggleBike2() {
+  const section   = document.getElementById('bike2-section');
+  const toggleRow = document.getElementById('bike2-toggle-row');
+  const visible   = section.style.display !== 'none';
+  if (visible) {
+    section.style.display   = 'none';
+    toggleRow.style.display = 'block';
+    document.getElementById('res-znacka2').value     = '';
+    document.getElementById('res-model2').value      = '';
+    document.getElementById('res-rok2').value        = '';
+    document.getElementById('res-rok2-warn').style.display = 'none';
   } else {
-    newOverrides[_scDayDate] = _scDaySelected;
+    section.style.display   = 'block';
+    toggleRow.style.display = 'none';
   }
+}
+
+function openTermsModal(e) {
+  e && e.preventDefault();
+  document.getElementById('terms-content').innerHTML =
+    serviceConditions || 'Podmienky servisu neboli zatiaľ nastavené. Kontaktujte nás priamo.';
+  openOverlay('overlay-terms');
+}
+
+function openReservationModal(dateStr) {
+  editingResId = null;
+  document.getElementById('res-meno').value       = '';
+  document.getElementById('res-priezvisko').value = '';
+  document.getElementById('res-telefon').value    = '';
+  document.getElementById('res-email').value      = '';
+  document.getElementById('res-znacka').value     = '';
+  document.getElementById('res-model').value      = '';
+  document.getElementById('res-rok').value        = '';
+  document.getElementById('res-popis').value      = '';
+  document.getElementById('res-rok-warn').style.display  = 'none';
+  document.getElementById('res-terms-check').checked     = false;
+  // Reset 2. bicykel
+  document.getElementById('bike2-section').style.display   = 'none';
+  document.getElementById('bike2-toggle-row').style.display = 'block';
+  document.getElementById('res-znacka2').value     = '';
+  document.getElementById('res-model2').value      = '';
+  document.getElementById('res-rok2').value        = '';
+  document.getElementById('res-rok2-warn').style.display = 'none';
+  document.getElementById('res-date-label').textContent = fmtDateLong(dateStr);
+  document.getElementById('res-date-label').dataset.date = dateStr;
+  openOverlay('overlay-reservation');
+}
+
+async function submitReservation() {
+  const datum      = document.getElementById('res-date-label').dataset.date;
+  const meno       = document.getElementById('res-meno').value.trim();
+  const priezvisko = document.getElementById('res-priezvisko').value.trim();
+  const telefon    = document.getElementById('res-telefon').value.trim();
+  const email      = document.getElementById('res-email').value.trim();
+  const znacka     = document.getElementById('res-znacka').value.trim();
+  const model      = document.getElementById('res-model').value.trim();
+  const rokVyroby  = document.getElementById('res-rok').value.trim();
+  const popis      = document.getElementById('res-popis').value.trim();
+
+  const bike2visible = document.getElementById('bike2-section').style.display !== 'none';
+  const znacka2      = bike2visible ? document.getElementById('res-znacka2').value.trim() : '';
+  const model2       = bike2visible ? document.getElementById('res-model2').value.trim()  : '';
+  const rokVyroby2   = bike2visible ? document.getElementById('res-rok2').value.trim()    : '';
+
+  if (!priezvisko)               return alert('Vyplňte priezvisko.');
+  if (!telefon)                  return alert('Vyplňte telefónne číslo.');
+  if (!znacka)                   return alert('Vyplňte značku bicykla.');
+  if (bike2visible && !znacka2)  return alert('Vyplňte značku 2. bicykla.');
+  if (!popis)                    return alert('Stručne opíšte problém s bicyklom.');
+  if (!document.getElementById('res-terms-check').checked)
+                                 return alert('Musíte sa oboznámiť s podmienkami servisu.');
+
+  // Overenie voľnosti termínu
+  if (getFreeSlots(datum) === 0) return alert('Tento termín je žiaľ plný. Vyberte iný dátum.');
+
+  const btn = document.getElementById('submit-res-btn');
+  btn.disabled    = true;
+  btn.textContent = 'Odosielam...';
 
   try {
-    await apiCall(SERVIS_URL, 'updateConfig', { config: { DAY_OVERRIDES: JSON.stringify(newOverrides) } });
-    servisDayOverrides = newOverrides;
-    closeOverlay('overlay-sc-day');
-    renderScCal();
-    renderOverviewCalendar();
+    const payload = { datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis };
+    if (bike2visible && znacka2) Object.assign(payload, { znacka2, model2, rokVyroby2 });
+    const result = await apiCall('addReservation', payload);
+    reservations.push({ id: result.id, ...payload });
+    renderCalendar();
+    closeOverlay('overlay-reservation');
+    showThankyou(payload);
+    refreshData();
+  } catch (e) {
+    alert('Chyba pri odosielaní: ' + e.message);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Odoslať žiadosť →';
+  }
+}
+
+function showThankyou(res) {
+  const bikeStr  = [res.znacka,  res.model,  res.rokVyroby  ? '(' + res.rokVyroby  + ')' : ''].filter(Boolean).join(' ');
+  const bike2Str = [res.znacka2, res.model2, res.rokVyroby2 ? '(' + res.rokVyroby2 + ')' : ''].filter(Boolean).join(' ');
+  const fullName = (res.meno ? res.meno + ' ' : '') + res.priezvisko;
+  const defaultDetails =
+    '<div class="detail-row"><span class="dk">Termín</span><span class="dv">' + fmtDateLong(res.datum) + '</span></div>' +
+    '<div class="detail-row"><span class="dk">Zákazník</span><span class="dv">' + fullName + '</span></div>' +
+    '<div class="detail-row"><span class="dk">Telefón</span><span class="dv">' + res.telefon + '</span></div>' +
+    (res.email ? '<div class="detail-row"><span class="dk">E-mail</span><span class="dv">' + res.email + '</span></div>' : '') +
+    '<div class="detail-row"><span class="dk">Bicykel' + (bike2Str ? ' 1' : '') + '</span><span class="dv">' + (bikeStr || '—') + '</span></div>' +
+    (bike2Str ? '<div class="detail-row"><span class="dk">Bicykel 2</span><span class="dv">' + bike2Str + '</span></div>' : '') +
+    '<div class="detail-row"><span class="dk">Problém</span><span class="dv">' + res.popis + '</span></div>';
+
+  const detailsEl = document.getElementById('thankyou-details');
+  if (thankyouHtml) {
+    detailsEl.innerHTML = thankyouHtml.replace(/\{details\}/g, defaultDetails);
+  } else {
+    detailsEl.innerHTML = defaultDetails;
+  }
+  showView('thankyou');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMIN — TABUĽKA REZERVÁCIÍ
+// ═══════════════════════════════════════════════════════════════════
+
+function renderReservationsTable() {
+  const tbody = document.getElementById('reservations-tbody');
+  tbody.innerHTML = '';
+  if (!reservations.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">Žiadne rezervácie</td></tr>';
+    return;
+  }
+  const sorted = [...reservations].sort((a, b) => a.datum < b.datum ? -1 : a.datum > b.datum ? 1 : 0);
+  sorted.forEach((r, i) => {
+    const bikeStr = [r.znacka, r.model, r.rokVyroby ? '(' + r.rokVyroby + ')' : ''].filter(Boolean).join(' ');
+    const isPast  = r.datum < todayStr;
+    const tr      = document.createElement('tr');
+    tr.style.opacity = isPast ? '0.55' : '1';
+    tr.innerHTML =
+      '<td><span class="badge badge-blue">#' + (i + 1) + '</span></td>' +
+      '<td><strong>' + fmtDate(r.datum) + '</strong><br><span style="font-size:0.73rem;color:var(--muted)">' + getDayName(r.datum) + '</span></td>' +
+      '<td><strong>' + r.meno + ' ' + r.priezvisko + '</strong></td>' +
+      '<td style="font-size:0.8rem">' + (r.telefon || '—') + '<br><span style="color:var(--muted)">' + (r.email || '') + '</span></td>' +
+      '<td style="font-size:0.8rem">' + (bikeStr || '—') + '</td>' +
+      '<td style="font-size:0.8rem;max-width:220px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (r.popis || '') + '">' + (r.popis || '—') + '</div></td>' +
+      '<td><div style="display:flex;gap:5px">' +
+        '<button class="btn btn-ghost btn-sm" onclick="editReservation(\'' + r.id + '\')">✏️</button>' +
+        '<button class="btn btn-red btn-sm" onclick="deleteReservation(\'' + r.id + '\')">🗑</button>' +
+      '</div></td>';
+    tbody.appendChild(tr);
+  });
+}
+
+async function deleteReservation(id) {
+  if (!confirm('Naozaj chcete vymazať túto rezerváciu?')) return;
+  try {
+    await apiCall('deleteReservation', { id });
+    reservations = reservations.filter(r => r.id !== id);
+    renderReservationsTable();
+    renderCalendar();
+  } catch (e) { alert('Chyba: ' + e.message); }
+}
+
+function editReservation(id) {
+  const r = reservations.find(x => x.id === id);
+  if (!r) return;
+  openAdminResModal(r);
+}
+
+function openAddReservationModal() { openAdminResModal(null); }
+
+function openAdminResModal(res) {
+  editingResId = res ? res.id : null;
+  document.getElementById('admin-res-title').textContent = res ? 'Upraviť rezerváciu' : 'Pridať rezerváciu';
+
+  document.getElementById('admin-res-form').innerHTML =
+    '<input type="hidden" id="arf-id" value="' + (res ? res.id : '') + '">' +
+
+    '<div class="fsec" style="margin-top:0">Dátum a termín</div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Dátum</label><input type="date" id="arf-datum" value="' + (res ? res.datum : '') + '"></div>' +
+      '<div class="form-group"></div>' +
+    '</div>' +
+
+    '<div class="fsec">Kontaktné údaje</div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Meno</label><input type="text" id="arf-meno" value="' + (res ? escHtml(res.meno) : '') + '"></div>' +
+      '<div class="form-group"><label>Priezvisko</label><input type="text" id="arf-priezvisko" value="' + (res ? escHtml(res.priezvisko) : '') + '"></div>' +
+    '</div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Telefón</label><input type="tel" id="arf-telefon" value="' + (res ? escHtml(res.telefon || '') : '') + '"></div>' +
+      '<div class="form-group"><label>E-mail</label><input type="email" id="arf-email" value="' + (res ? escHtml(res.email || '') : '') + '"></div>' +
+    '</div>' +
+
+    '<div class="fsec">Informácie o bicykli</div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Značka</label><input type="text" id="arf-znacka" value="' + (res ? escHtml(res.znacka || '') : '') + '"></div>' +
+      '<div class="form-group"><label>Model</label><input type="text" id="arf-model" value="' + (res ? escHtml(res.model || '') : '') + '"></div>' +
+    '</div>' +
+    '<div class="form-row">' +
+      '<div class="form-group"><label>Rok výroby</label><input type="number" id="arf-rok" value="' + (res ? escHtml(res.rokVyroby || '') : '') + '"></div>' +
+      '<div class="form-group"></div>' +
+    '</div>' +
+
+    '<div class="fsec">Popis problému</div>' +
+    '<div class="form-group"><textarea id="arf-popis" rows="3">' + (res ? escHtml(res.popis || '') : '') + '</textarea></div>';
+
+  openOverlay('overlay-admin-res');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function saveAdminReservation() {
+  const id         = document.getElementById('arf-id').value;
+  const datum      = document.getElementById('arf-datum').value;
+  const meno       = document.getElementById('arf-meno').value.trim();
+  const priezvisko = document.getElementById('arf-priezvisko').value.trim();
+  const telefon    = document.getElementById('arf-telefon').value.trim();
+  const email      = document.getElementById('arf-email').value.trim();
+  const znacka     = document.getElementById('arf-znacka').value.trim();
+  const model      = document.getElementById('arf-model').value.trim();
+  const rokVyroby  = document.getElementById('arf-rok').value.trim();
+  const popis      = document.getElementById('arf-popis').value.trim();
+
+  if (!datum)               return alert('Vyberte dátum.');
+  if (!meno || !priezvisko) return alert('Vyplňte meno a priezvisko.');
+  if (!telefon)             return alert('Vyplňte telefón.');
+
+  const btn = document.getElementById('save-admin-res-btn');
+  btn.disabled = true; btn.textContent = 'Ukladám...';
+
+  try {
+    if (id) {
+      await apiCall('updateReservation', { id, datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis });
+      const idx = reservations.findIndex(r => r.id === id);
+      if (idx >= 0) reservations[idx] = { ...reservations[idx], datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis };
+    } else {
+      const result = await apiCall('addReservation', { datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis, adminAdded: true });
+      reservations.push({ id: result.id, datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis });
+    }
+    closeOverlay('overlay-admin-res');
+    renderReservationsTable();
+    renderCalendar();
   } catch (e) { alert('Chyba: ' + e.message); }
   finally { btn.disabled = false; btn.textContent = 'Uložiť'; }
 }
 
 // ═══════════════════════════════════════════════════════════════════
-//  SERVIS — TABUĽKA
+//  ADMIN — KALENDÁR
 // ═══════════════════════════════════════════════════════════════════
 
-function renderServisTable() {
-  const tbody = document.getElementById('servis-tbody');
-  tbody.innerHTML = '';
-  if (!servisRes.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">Žiadne rezervácie</td></tr>';
-    return;
-  }
-  const sorted = [...servisRes].sort((a,b) => a.datum<b.datum?-1:a.datum>b.datum?1:0);
-  sorted.forEach((r,i) => {
-    const bike    = [r.znacka, r.model, r.rokVyroby?'('+r.rokVyroby+')':''].filter(Boolean).join(' ');
-    const isPast  = r.datum < todayStr;
-    const tr      = document.createElement('tr');
-    tr.style.opacity = isPast ? '0.55' : '1';
-    tr.innerHTML =
-      '<td><span class="badge badge-red">#'+(i+1)+'</span></td>' +
-      '<td><strong>'+fmtDate(r.datum)+'</strong><br><span style="font-size:.72rem;color:var(--muted)">'+getDayName(r.datum)+'</span></td>' +
-      '<td><strong>'+escHtml(r.meno)+' '+escHtml(r.priezvisko)+'</strong></td>' +
-      '<td style="font-size:.8rem">'+escHtml(r.telefon||'—')+'<br><span style="color:var(--muted)">'+escHtml(r.email||'')+'</span></td>' +
-      '<td style="font-size:.8rem">'+escHtml(bike||'—')+'</td>' +
-      '<td style="font-size:.8rem;max-width:200px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escHtml(r.popis||'')+'">'+escHtml(r.popis||'—')+'</div></td>' +
-      '<td><div style="display:flex;gap:5px">'+
-        '<button class="btn btn-ghost btn-sm" onclick="openServisModal(\''+r.id+'\')">✏️</button>'+
-        '<button class="btn btn-red btn-sm" onclick="deleteServisRes(\''+r.id+'\')">🗑</button>'+
-      '</div></td>';
-    tbody.appendChild(tr);
+function adminChangeMonth(delta) {
+  adminCalMonth += delta;
+  if (adminCalMonth > 11) { adminCalMonth = 0; adminCalYear++; }
+  if (adminCalMonth < 0)  { adminCalMonth = 11; adminCalYear--; }
+  renderAdminCal();
+}
+
+function renderAdminCalendar() {
+  renderAdminCal();
+}
+
+function renderAdminCal() {
+  document.getElementById('admin-cal-month-label').textContent = MONTHS_SK[adminCalMonth] + ' ' + adminCalYear;
+  const grid = document.getElementById('admin-cal-grid');
+  grid.innerHTML = '';
+
+  DAYS_SK.forEach((d, i) => {
+    const el = document.createElement('div');
+    el.className = 'cal-dow' + (i >= 5 ? ' weekend' : '');
+    el.textContent = d;
+    grid.appendChild(el);
   });
-}
 
-function sfToggleBike2() {
-  const section = document.getElementById('sf-bike2-section');
-  const toggle  = document.getElementById('sf-bike2-toggle');
-  const visible = section.style.display !== 'none';
-  if (visible) {
-    section.style.display = 'none';
-    toggle.style.display  = '';
-    document.getElementById('sf-znacka2').value = '';
-    document.getElementById('sf-model2').value  = '';
-    document.getElementById('sf-rok2').value    = '';
-  } else {
-    section.style.display = 'block';
-    toggle.style.display  = 'none';
+  const firstDay    = new Date(adminCalYear, adminCalMonth, 1);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  for (let i = 0; i < startOffset; i++) {
+    const el = document.createElement('div');
+    el.className = 'cal-day empty';
+    grid.appendChild(el);
   }
-}
 
-function openServisModal(id) {
-  const r        = id ? servisRes.find(x=>x.id===id) : null;
-  const hasBike2 = !!(r && r.znacka2);
-  editingServisId = id || null;
-  document.getElementById('servis-modal-title').textContent = r ? 'Upraviť rezerváciu servisu' : 'Pridať rezerváciu servisu';
-  document.getElementById('servis-modal-form').innerHTML =
-    '<input type="hidden" id="sf-id" value="'+(r?r.id:'')+'">'+
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Dátum</label><input type="date" id="sf-datum" value="'+(r?r.datum:'')+'"></div>'+
-      '<div class="form-group"></div>'+
-    '</div>'+
-    '<div class="fsec">Zákazník</div>'+
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Meno</label><input type="text" id="sf-meno" value="'+escHtml(r?r.meno:'')+'"></div>'+
-      '<div class="form-group"><label>Priezvisko</label><input type="text" id="sf-priezvisko" value="'+escHtml(r?r.priezvisko:'')+'"></div>'+
-    '</div>'+
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Telefón</label><input type="tel" id="sf-telefon" value="'+escHtml(r?r.telefon||'':'')+'"></div>'+
-      '<div class="form-group"><label>E-mail</label><input type="email" id="sf-email" value="'+escHtml(r?r.email||'':'')+'"></div>'+
-    '</div>'+
-    '<div class="fsec">Bicykel'+(hasBike2?' 1':'')+'</div>'+
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Značka</label><input type="text" id="sf-znacka" value="'+escHtml(r?r.znacka||'':'')+'"></div>'+
-      '<div class="form-group"><label>Model</label><input type="text" id="sf-model" value="'+escHtml(r?r.model||'':'')+'"></div>'+
-    '</div>'+
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Rok výroby</label><input type="number" id="sf-rok" value="'+escHtml(r?r.rokVyroby||'':'')+'"></div>'+
-      '<div class="form-group"></div>'+
-    '</div>'+
-    '<div id="sf-bike2-toggle"'+(hasBike2?' style="display:none"':'')+'>'+
-      '<button type="button" class="btn btn-ghost btn-sm" style="margin:4px 0 2px" onclick="sfToggleBike2()">+ Pridať 2. bicykel</button>'+
-    '</div>'+
-    '<div id="sf-bike2-section" style="display:'+(hasBike2?'block':'none')+'">'+
-      '<div class="fsec" style="display:flex;justify-content:space-between;align-items:center">'+
-        '<span>Bicykel 2</span>'+
-        '<button type="button" onclick="sfToggleBike2()" style="background:none;border:none;cursor:pointer;font-size:.78rem;color:var(--muted);padding:0;font-family:inherit">✕ Odstrániť</button>'+
-      '</div>'+
-      '<div class="form-row">'+
-        '<div class="form-group"><label>Značka</label><input type="text" id="sf-znacka2" value="'+escHtml(r?r.znacka2||'':'')+'"></div>'+
-        '<div class="form-group"><label>Model</label><input type="text" id="sf-model2" value="'+escHtml(r?r.model2||'':'')+'"></div>'+
-      '</div>'+
-      '<div class="form-row">'+
-        '<div class="form-group"><label>Rok výroby</label><input type="number" id="sf-rok2" value="'+escHtml(r?r.rokVyroby2||'':'')+'"></div>'+
-        '<div class="form-group"></div>'+
-      '</div>'+
-    '</div>'+
-    '<div class="fsec">Popis problému</div>'+
-    '<div class="form-group"><textarea id="sf-popis" rows="3">'+escHtml(r?r.popis||'':'')+'</textarea></div>';
-  openOverlay('overlay-servis');
-}
+  const daysInMonth = new Date(adminCalYear, adminCalMonth + 1, 0).getDate();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dtStr   = adminCalYear + '-' + String(adminCalMonth + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+    const isWknd  = isWeekend(dtStr);
+    const isBlk   = isBlocked(dtStr);
+    const isHol   = isHoliday(dtStr);
+    const used    = getUsedSlots(dtStr);
+    const maxSl   = getMaxSlots(dtStr);
+    const free    = getFreeSlots(dtStr);
+    const hasOver = dayOverrides[dtStr] !== undefined;
+    const el      = document.createElement('div');
+    let cls = 'cal-day';
+    if (isWknd)                         cls += ' weekend';
+    else if (isHol)                     cls += ' holiday';
+    else if (isBlk)                     cls += ' blocked';
+    else if (maxSl === 0 || free === 0) cls += ' full';
+    el.className = cls;
 
-async function saveServisReservation() {
-  const id         = document.getElementById('sf-id').value;
-  const datum      = document.getElementById('sf-datum').value;
-  const meno       = document.getElementById('sf-meno').value.trim();
-  const priezvisko = document.getElementById('sf-priezvisko').value.trim();
-  const telefon    = document.getElementById('sf-telefon').value.trim();
-  const email      = document.getElementById('sf-email').value.trim();
-  const znacka     = document.getElementById('sf-znacka').value.trim();
-  const model      = document.getElementById('sf-model').value.trim();
-  const rokVyroby  = document.getElementById('sf-rok').value.trim();
-  const popis      = document.getElementById('sf-popis').value.trim();
-
-  const bike2visible = document.getElementById('sf-bike2-section').style.display !== 'none';
-  const znacka2    = bike2visible ? document.getElementById('sf-znacka2').value.trim() : '';
-  const model2     = bike2visible ? document.getElementById('sf-model2').value.trim()  : '';
-  const rokVyroby2 = bike2visible ? document.getElementById('sf-rok2').value.trim()    : '';
-
-  if (!SERVIS_URL) return alert('Nie je nastavené Servis API URL.');
-
-  const btn = document.getElementById('servis-save-btn');
-  btn.disabled=true; btn.textContent='Ukladám...';
-  try {
-    const payload = {datum,meno,priezvisko,telefon,email,znacka,model,rokVyroby,popis};
-    if (bike2visible && znacka2) Object.assign(payload, {znacka2,model2,rokVyroby2});
-    if (id) {
-      await apiCall(SERVIS_URL, 'updateReservation', {id,...payload});
-      const idx = servisRes.findIndex(r=>r.id===id);
-      if (idx>=0) servisRes[idx]={...servisRes[idx],...payload};
+    if (!isWknd && !isHol) {
+      el.style.cursor = 'pointer';
+      el.title = 'Kliknite pre nastavenie slotov';
+      el.onclick = () => openDaySettingsModal(dtStr);
     } else {
-      const result = await apiCall(SERVIS_URL, 'addReservation', {...payload, adminAdded:true});
-      servisRes.push({id:result.id,...payload});
+      el.style.cursor = 'default';
     }
-    closeOverlay('overlay-servis');
-    renderServisTable();
-    renderOverviewCalendar();
-    renderStats();
-  } catch(e) { alert('Chyba: '+e.message); }
-  finally { btn.disabled=false; btn.textContent='Uložiť'; }
-}
 
-async function deleteServisRes(id) {
-  if (!confirm('Naozaj vymazať túto rezerváciu?')) return;
-  if (!SERVIS_URL) return alert('Nie je nastavené Servis API URL.');
-  try {
-    await apiCall(SERVIS_URL, 'deleteReservation', {id});
-    servisRes = servisRes.filter(r=>r.id!==id);
-    renderServisTable();
-    renderOverviewCalendar();
-    renderStats();
-  } catch(e) { alert('Chyba: '+e.message); }
-}
+    const numEl = document.createElement('div');
+    numEl.className = 'day-num';
+    numEl.textContent = day;
+    // Malý indikátor overridu
+    if (hasOver && !isHol) {
+      const dot = document.createElement('span');
+      dot.style.cssText = 'display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--accent);margin-left:3px;vertical-align:middle';
+      numEl.appendChild(dot);
+    }
+    el.appendChild(numEl);
 
-// ═══════════════════════════════════════════════════════════════════
-//  POŽIČOVŇA — TABUĽKA
-// ═══════════════════════════════════════════════════════════════════
-
-function renderRentalTable() {
-  const tbody = document.getElementById('rental-tbody');
-  tbody.innerHTML = '';
-  if (!rentalRes.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">Žiadne rezervácie</td></tr>';
-    return;
+    if (!isWknd) {
+      const badge = document.createElement('div');
+      if (isHol) {
+        badge.className = 'slot-badge holiday';
+        badge.textContent = 'Sviatok';
+      } else if (isBlk) {
+        badge.className = 'slot-badge closed';
+        badge.textContent = 'Zatv.';
+      } else if (maxSl === 0) {
+        badge.className = 'slot-badge free-0';
+        badge.textContent = '0 slotov';
+      } else if (free === 0) {
+        badge.className = 'slot-badge free-0';
+        badge.textContent = used + '/' + maxSl;
+      } else if (used > 0) {
+        badge.className = 'slot-badge free-1';
+        badge.textContent = used + '/' + maxSl;
+      } else {
+        badge.className = 'slot-badge free-2';
+        badge.textContent = '0/' + maxSl;
+      }
+      el.appendChild(badge);
+    }
+    grid.appendChild(el);
   }
-  const sorted = [...rentalRes].sort((a,b) => a.from<b.from?-1:a.from>b.from?1:0);
-  sorted.forEach((r,i) => {
-    const bikeNames = (r.bikeIds||[]).map(id=>bikes.find(b=>b.id===id)?.name||id).join(', ');
-    const isPast    = r.to < todayStr;
-    const isActive  = r.from<=todayStr && r.to>=todayStr;
-    const tr        = document.createElement('tr');
-    tr.style.opacity = isPast ? '0.55' : '1';
-    tr.innerHTML =
-      '<td><span class="badge badge-blue">#'+(i+1)+'</span></td>'+
-      '<td style="font-size:.8rem"><strong>'+fmtDate(r.from)+'</strong><br>→ '+fmtDate(r.to)+
-        (isActive?'<br><span class="badge badge-green" style="margin-top:3px">Aktívne</span>':'')+'</td>'+
-      '<td><strong>'+escHtml(r.name)+' '+escHtml(r.surname)+'</strong></td>'+
-      '<td style="font-size:.8rem">'+escHtml(r.phone||'—')+'<br><span style="color:var(--muted)">'+escHtml(r.email||'')+'</span></td>'+
-      '<td style="font-size:.8rem">'+escHtml(bikeNames||'—')+'</td>'+
-      '<td style="font-size:.8rem"><strong>'+(r.days||'?')+'</strong> dní<br>'+(r.total?r.total+' €':'—')+'</td>'+
-      '<td><div style="display:flex;gap:5px">'+
-        '<button class="btn btn-ghost btn-sm" onclick="openRentalModal(\''+r.id+'\')">✏️</button>'+
-        '<button class="btn btn-red btn-sm" onclick="deleteRentalRes(\''+r.id+'\')">🗑</button>'+
-      '</div></td>';
-    tbody.appendChild(tr);
-  });
-}
 
-function calcRentalPrice(bikeIds, from, to) {
-  if (!from || !to) return { days:0, total:0 };
-  const d1 = new Date(from+'T12:00:00'), d2 = new Date(to+'T12:00:00');
-  const days = Math.round((d2-d1)/(1000*60*60*24))+1;
-  let total = 0;
-  bikeIds.forEach(id => {
-    const bike = bikes.find(b=>b.id===id);
-    if (!bike || !bike.pricing) return;
-    const tier = bike.pricing.find(t => days>=t.minDays && days<=t.maxDays);
-    if (tier) total += tier.pricePerDay * days;
-  });
-  return { days, total };
-}
-
-function openRentalModal(id) {
-  const r = id ? rentalRes.find(x=>x.id===id) : null;
-  editingRentalId = id || null;
-  document.getElementById('rental-modal-title').textContent = r ? 'Upraviť rezerváciu požičovne' : 'Pridať rezerváciu požičovne';
-
-  let bikeCheckboxes = bikes.map(b =>
-    '<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;font-size:.85rem">'+
-    '<input type="checkbox" class="rf-bike-cb" value="'+b.id+'"'+
-      ((r&&r.bikeIds&&r.bikeIds.includes(b.id))?' checked':'')+
-    '> '+(b.emoji||'🚲')+' '+escHtml(b.name)+' <span style="color:var(--muted);font-size:.75rem">('+escHtml(b.size||'')+')</span></label>'
-  ).join('') || '<div style="color:var(--muted);font-size:.84rem">Žiadne bicykle — nastavte ich v Nastaveniach.</div>';
-
-  document.getElementById('rental-modal-form').innerHTML =
-    '<input type="hidden" id="rf-id" value="'+(r?r.id:'')+'">'+
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Od</label><input type="date" id="rf-from" value="'+(r?r.from:'')+'" onchange="updateRentalPrice()"></div>'+
-      '<div class="form-group"><label>Do</label><input type="date" id="rf-to" value="'+(r?r.to:'')+'" onchange="updateRentalPrice()"></div>'+
-    '</div>'+
-    '<div class="form-group"><label>Bicykle</label><div id="rf-bikes-list" onchange="updateRentalPrice()">'+bikeCheckboxes+'</div></div>'+
-    '<div class="fsec">Zákazník</div>'+
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Meno</label><input type="text" id="rf-name" value="'+escHtml(r?r.name:'')+'"></div>'+
-      '<div class="form-group"><label>Priezvisko</label><input type="text" id="rf-surname" value="'+escHtml(r?r.surname:'')+'"></div>'+
-    '</div>'+
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Telefón</label><input type="tel" id="rf-phone" value="'+escHtml(r?r.phone||'':'')+'"></div>'+
-      '<div class="form-group"><label>E-mail</label><input type="email" id="rf-email" value="'+escHtml(r?r.email||'':'')+'"></div>'+
-    '</div>'+
-    '<div id="rf-price-row" style="background:#f4f4f4;border-radius:var(--radius);padding:10px 14px;font-size:.85rem;margin-top:4px"></div>';
-
-  updateRentalPrice();
-  openOverlay('overlay-rental');
-}
-
-function updateRentalPrice() {
-  const from    = document.getElementById('rf-from')?.value;
-  const to      = document.getElementById('rf-to')?.value;
-  const cbs     = document.querySelectorAll('.rf-bike-cb:checked');
-  const bikeIds = Array.from(cbs).map(c=>Number(c.value));
-  const row     = document.getElementById('rf-price-row');
-  if (!row) return;
-  if (!from||!to||!bikeIds.length) { row.textContent=''; return; }
-  const {days,total} = calcRentalPrice(bikeIds, from, to);
-  row.innerHTML = '<strong>'+days+' dní</strong> · Celková cena: <strong>'+total+' €</strong>';
-}
-
-async function saveRentalReservation() {
-  const id      = document.getElementById('rf-id').value;
-  const from    = document.getElementById('rf-from').value;
-  const to      = document.getElementById('rf-to').value;
-  const name    = document.getElementById('rf-name').value.trim();
-  const surname = document.getElementById('rf-surname').value.trim();
-  const phone   = document.getElementById('rf-phone').value.trim();
-  const email   = document.getElementById('rf-email').value.trim();
-  const bikeIds = Array.from(document.querySelectorAll('.rf-bike-cb:checked')).map(c=>Number(c.value));
-
-  if (!from||!to)          return alert('Vyplňte dátumy.');
-  if (from>to)             return alert('Dátum OD musí byť skôr ako DO.');
-  if (!name||!surname)     return alert('Vyplňte meno a priezvisko.');
-  if (!bikeIds.length)     return alert('Vyberte aspoň jeden bicykel.');
-  if (!RENTAL_URL)         return alert('Nie je nastavené Požičovňa API URL.');
-
-  const {days,total} = calcRentalPrice(bikeIds, from, to);
-
-  const btn = document.getElementById('rental-save-btn');
-  btn.disabled=true; btn.textContent='Ukladám...';
-  try {
-    if (id) {
-      await apiCall(RENTAL_URL,'updateReservation',{id,from,to,name,surname,phone,email,bikeIds,days,total});
-      const idx=rentalRes.findIndex(r=>r.id===id);
-      if (idx>=0) rentalRes[idx]={...rentalRes[idx],from,to,name,surname,phone,email,bikeIds,days,total};
-    } else {
-      const result=await apiCall(RENTAL_URL,'addReservation',{from,to,name,surname,phone,email,bikeIds,days,total});
-      rentalRes.push({id:result.id,from,to,name,surname,phone,email,bikeIds,days,total});
-    }
-    closeOverlay('overlay-rental');
-    renderRentalTable();
-    renderOverviewCalendar();
-    renderStats();
-  } catch(e) { alert('Chyba: '+e.message); }
-  finally { btn.disabled=false; btn.textContent='Uložiť'; }
-}
-
-async function deleteRentalRes(id) {
-  if (!confirm('Naozaj vymazať túto rezerváciu?')) return;
-  if (!RENTAL_URL) return alert('Nie je nastavené Požičovňa API URL.');
-  try {
-    await apiCall(RENTAL_URL,'deleteReservation',{id});
-    rentalRes=rentalRes.filter(r=>r.id!==id);
-    renderRentalTable();
-    renderOverviewCalendar();
-    renderStats();
-  } catch(e) { alert('Chyba: '+e.message); }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  DOKUMENTY
-// ═══════════════════════════════════════════════════════════════════
-
-function getDefaultDocuments() {
-  return {
-    conditions:{id:'conditions',title:'Čo by ste mali vedieť pred požičaním bicykla',content:'<h4>1. Prevzatie bicykla</h4><p>Zákazník je povinný skontrolovať stav bicykla pri prevzatí. Akékoľvek poškodenia musia byť nahlásené pred odchodom.</p><h4>2. Zodpovednosť za škody</h4><p>V prípade poškodenia, straty alebo odcudzenia bicykla je zákazník povinný uhradiť plnú náhradu škody.</p><h4>3. Vrátenie bicykla</h4><p>Bicykel musí byť vrátený v rovnakom stave ako pri prevzatí, včas podľa dohodnutého termínu.</p><h4>4. Bezpečnosť</h4><p>Zákazník je povinný jazdiť s prílbou a dodržiavať všetky pravidlá cestnej premávky.</p>'},
-    contract:{id:'contract',title:'Zmluva o vypožičaní bicykla',content:'<h4>Zmluvné strany</h4><p>Požičovňa bicyklov (ďalej len „Prenajímateľ") a zákazník (ďalej len „Nájomca") uzatvárajú túto zmluvu o vypožičaní bicykla.</p><h4>Predmet zmluvy</h4><p>Prenajímateľ odovzdáva Nájomcovi do dočasného užívania bicykel. Nájomca sa zaväzuje vrátiť bicykel v rovnakom stave v dohodnutom termíne.</p><h4>Záverečné ustanovenia</h4><p>Odoslaním rezervácie Nájomca potvrdzuje súhlas s podmienkami zmluvy.</p>'},
-    gdpr:{id:'gdpr',title:'Ochrana osobných údajov',content:'<h4>Správca osobných údajov</h4><p>Vaše osobné údaje spracúva požičovňa bicyklov v súlade s nariadením GDPR.</p><h4>Účel spracovania</h4><p>Osobné údaje spracúvame výlučne za účelom vybavenia rezervácie.</p><h4>Vaše práva</h4><p>Máte právo na prístup k údajom, opravu, vymazanie alebo obmedzenie spracovania.</p>'}
-  };
-}
-
-function renderDocumentsEditor() {
-  const wrap = document.getElementById('documents-editor');
-  wrap.innerHTML = '';
-  const docs   = Object.keys(documents).length ? documents : getDefaultDocuments();
-  const labels = {
-    conditions:{ icon:'ℹ️', label:'Čo by ste mali vedieť pred požičaním' },
-    contract:  { icon:'📄', label:'Zmluva o vypožičaní bicykla' },
-    gdpr:      { icon:'🔒', label:'Ochrana osobných údajov' }
-  };
-  Object.entries(docs).forEach(([key,doc]) => {
-    const meta = labels[key]||{icon:'📄',label:doc.title};
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.style.marginBottom = '16px';
-    card.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'+
-        '<div><div style="font-size:1rem;font-weight:700">'+meta.icon+' '+escHtml(meta.label)+'</div>'+
-        '<div style="font-size:.74rem;color:var(--muted);margin-top:2px">Zobrazuje sa zákazníkovi v požičovni</div></div>'+
-        '<button class="btn btn-primary btn-sm" onclick="saveDocument(\''+key+'\',this)">💾 Uložiť</button>'+
-      '</div>'+
-      '<div class="form-group"><label>Nadpis</label><input type="text" id="doc-title-'+key+'" value="'+escHtml(doc.title)+'"></div>'+
-      '<div class="form-group"><label>Obsah (HTML: &lt;h4&gt;, &lt;p&gt;, &lt;ul&gt;...)</label>'+
-        '<textarea id="doc-content-'+key+'" style="min-height:160px;font-family:monospace;font-size:.8rem">'+
-          doc.content.replace(/</g,'&lt;').replace(/>/g,'&gt;')+
-        '</textarea></div>'+
-      '<button class="btn btn-ghost btn-sm" onclick="previewDocument(\''+key+'\')">👁 Náhľad</button>';
-    wrap.appendChild(card);
-  });
-}
-
-async function saveDocument(key, btn) {
-  const title   = document.getElementById('doc-title-'+key).value.trim();
-  const content = document.getElementById('doc-content-'+key).value;
-  if (!title) return alert('Vyplňte nadpis dokumentu.');
-  if (!RENTAL_URL) return alert('Nie je nastavené Požičovňa API URL.');
-  btn.disabled=true; btn.textContent='Ukladám...';
-  try {
-    await apiCall(RENTAL_URL,'updateDocument',{id:key,title,content});
-    documents[key]={id:key,title,content};
-    alert('Dokument bol uložený!');
-  } catch(e) { alert('Chyba: '+e.message); }
-  finally { btn.disabled=false; btn.textContent='💾 Uložiť'; }
-}
-
-function previewDocument(key) {
-  const title   = document.getElementById('doc-title-'+key).value;
-  const content = document.getElementById('doc-content-'+key).value;
-  document.getElementById('doc-preview-title').textContent = title;
-  document.getElementById('doc-preview-content').innerHTML = content;
-  openOverlay('overlay-doc-preview');
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  E-MAILOVÉ ŠABLÓNY
-// ═══════════════════════════════════════════════════════════════════
-
-async function saveEmailTemplates(system) {
-  const isServis = system === 'servis';
-  const url      = isServis ? SERVIS_URL : RENTAL_URL;
-  if (!url) return alert('Nie je nastavená API URL pre '+(isServis?'Servis':'Požičovňu')+'.');
-
-  const pfx   = isServis ? 'se' : 're';
-  const subj  = document.getElementById(pfx+'-customer-subj').value.trim();
-  const body  = document.getElementById(pfx+'-customer-body').value.trim();
-  const asubj = document.getElementById(pfx+'-admin-subj').value.trim();
-  const abody = document.getElementById(pfx+'-admin-body').value.trim();
-
-  try {
-    await apiCall(url, 'updateConfig', { config:{
-      EMAIL_CUSTOMER_SUBJ: subj,
-      EMAIL_CUSTOMER_BODY: body,
-      EMAIL_ADMIN_SUBJ:    asubj,
-      EMAIL_ADMIN_BODY:    abody
-    }});
-    alert('E-mailové šablóny boli uložené!');
-  } catch(e) { alert('Chyba: '+e.message); }
-}
-
-async function saveServiceConditions() {
-  if (!SERVIS_URL) return alert('Nie je nastavená API URL pre Servis.');
-  const conditions = document.getElementById('se-conditions').value.trim();
-  try {
-    await apiCall(SERVIS_URL, 'updateConfig', { config: { SERVICE_CONDITIONS: conditions } });
-    alert('Podmienky servisu boli uložené!');
-  } catch(e) { alert('Chyba: '+e.message); }
-}
-
-async function saveThankyouText(system) {
-  const isServis = system === 'servis';
-  const url  = isServis ? SERVIS_URL : RENTAL_URL;
-  const text = document.getElementById('doc-thankyou-'+system).value.trim();
-  if (!url) return alert('Nie je nastavená API URL pre '+(isServis?'Servis':'Požičovňu')+'.');
-  try {
-    await apiCall(url, 'updateConfig', { config: { THANKYOU_HTML: text } });
-    alert('Stránka poďakovania bola uložená!');
-  } catch(e) { alert('Chyba: '+e.message); }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  NASTAVENIA
-// ═══════════════════════════════════════════════════════════════════
-
-function renderSettingsPanel() {
-  // API URLs
-  document.getElementById('cfg-servis-url').value = SERVIS_URL;
-  document.getElementById('cfg-rental-url').value = RENTAL_URL;
-  // Servis config
-  document.getElementById('scfg-admin-email').value = servisAdminEmail;
-  document.getElementById('scfg-slots').value = servisSlotsPerDay;
-  renderBlockedList();
-  // Bikes admin
-  renderBikesAdmin();
-}
-
-function saveApiUrls() {
-  const su = document.getElementById('cfg-servis-url').value.trim();
-  const ru = document.getElementById('cfg-rental-url').value.trim();
-  SERVIS_URL = su; RENTAL_URL = ru;
-  if (su) localStorage.setItem(KEY_SERVIS_URL, su);
-  if (ru) localStorage.setItem(KEY_RENTAL_URL, ru);
-  loadAll().then(() => {
-    renderSettingsPanel();
-    alert('API URL adresy boli uložené a dáta načítané.');
-  });
-}
-
-async function saveServisSettings() {
-  if (!SERVIS_URL) return alert('Nie je nastavené Servis API URL.');
-  const email = document.getElementById('scfg-admin-email').value.trim();
-  const slots = parseInt(document.getElementById('scfg-slots').value)||2;
-  try {
-    await apiCall(SERVIS_URL,'updateConfig',{config:{ADMIN_EMAIL:email,SLOTS_PER_DAY:slots}});
-    servisAdminEmail=email; servisSlotsPerDay=slots;
-    alert('Nastavenia servisu boli uložené.');
-  } catch(e) { alert('Chyba: '+e.message); }
-}
-
-function renderBlockedList() {
-  const list = document.getElementById('scfg-blocked-list');
-  if (!list) return;
+  // Zoznam rezervácií v tomto mesiaci
+  const list = document.getElementById('admin-cal-res-list');
   list.innerHTML = '';
-  if (!servisBlocked.length) {
-    list.innerHTML='<span style="color:var(--muted);font-size:.84rem">Žiadne blokované dni</span>'; return;
+  const monthRes = reservations
+    .filter(r => {
+      const rf = new Date(r.datum + 'T12:00:00');
+      return rf.getFullYear() === adminCalYear && rf.getMonth() === adminCalMonth;
+    })
+    .sort((a, b) => a.datum < b.datum ? -1 : 1);
+
+  if (!monthRes.length) {
+    list.innerHTML = '<div style="color:var(--muted);font-size:0.85rem">Žiadne rezervácie</div>';
+  } else {
+    monthRes.forEach(r => {
+      const bikeStr = [r.znacka, r.model].filter(Boolean).join(' ');
+      const item    = document.createElement('div');
+      item.style.cssText = 'font-size:0.78rem;padding:8px 0;border-bottom:1px solid var(--border)';
+      item.innerHTML =
+        '<div style="font-weight:600;color:var(--dark)">' + r.meno + ' ' + r.priezvisko + '</div>' +
+        '<div style="color:var(--muted)">' + fmtDate(r.datum) + ' · ' + (r.telefon || r.email || '') + '</div>' +
+        (bikeStr ? '<div style="color:var(--accent);font-size:0.72rem;margin-top:2px">' + bikeStr + '</div>' : '');
+      list.appendChild(item);
+    });
   }
-  [...servisBlocked].sort().forEach(d => {
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMIN — NASTAVENIE SLOTOV PRE DEŇ
+// ═══════════════════════════════════════════════════════════════════
+
+let _daySettingsDate    = null;
+let _daySettingsSelected = null;   // číslo alebo null = globálne default
+
+function openDaySettingsModal(dateStr) {
+  _daySettingsDate = dateStr;
+  const hasOver  = dayOverrides[dateStr] !== undefined;
+  const curValue = hasOver ? dayOverrides[dateStr] : null;
+  _daySettingsSelected = curValue;
+
+  document.getElementById('day-settings-date-label').textContent = fmtDateLong(dateStr);
+
+  const used = getUsedSlots(dateStr);
+  _renderDaySlotBtns(used);
+  openOverlay('overlay-day-settings');
+}
+
+function _renderDaySlotBtns(usedCount) {
+  const container = document.getElementById('day-slot-btns');
+  container.innerHTML = '';
+
+  // Tlačidlo pre "globálne nastavenie"
+  const defBtn = document.createElement('button');
+  defBtn.className = 'btn btn-ghost btn-sm' + (_daySettingsSelected === null ? ' btn-primary' : '');
+  defBtn.style.cssText = 'min-width:56px;font-size:0.8rem';
+  defBtn.textContent = 'Štandard (' + slotsPerDay + ')';
+  defBtn.onclick = () => { _daySettingsSelected = null; _refreshDayBtns(usedCount); };
+  container.appendChild(defBtn);
+
+  // Tlačidlá 0–(slotsPerDay + 2) — adminovi dovolíme aj trochu nad globálny default
+  const maxShow = Math.max(slotsPerDay + 2, 6);
+  for (let n = 0; n <= maxShow; n++) {
+    const btn = document.createElement('button');
+    const isActive = _daySettingsSelected === n;
+    btn.className = 'btn btn-sm' + (isActive ? ' btn-primary' : ' btn-ghost');
+    btn.style.cssText = 'min-width:42px;font-size:0.85rem';
+    btn.textContent = n === 0 ? '0 ✕' : String(n);
+    if (n < usedCount) {
+      btn.disabled = true;
+      btn.title = 'Nemožno nastaviť nižšie ako existujúce rezervácie (' + usedCount + ')';
+    }
+    const val = n;
+    btn.onclick = () => { _daySettingsSelected = val; _refreshDayBtns(usedCount); };
+    container.appendChild(btn);
+  }
+
+  _updateDaySettingsInfo(usedCount);
+}
+
+function _refreshDayBtns(usedCount) {
+  _renderDaySlotBtns(usedCount);
+}
+
+function _updateDaySettingsInfo(usedCount) {
+  const info = document.getElementById('day-settings-info');
+  if (_daySettingsSelected === null) {
+    info.textContent = 'Bude použité globálne nastavenie (' + slotsPerDay + ' slotov / deň).';
+  } else if (_daySettingsSelected === 0) {
+    info.textContent = 'Deň bude uzatvorený — zákazníci si nebudú môcť vybrať tento termín.';
+  } else {
+    const free = Math.max(0, _daySettingsSelected - usedCount);
+    info.textContent = 'Celkom ' + _daySettingsSelected + ' slot' + (_daySettingsSelected > 1 ? 'y' : '') + '; ' + usedCount + ' obsadené, ' + free + ' voľné.';
+  }
+}
+
+async function saveDaySlots() {
+  if (!_daySettingsDate) return;
+  const btn = document.getElementById('save-day-slots-btn');
+  btn.disabled = true; btn.textContent = 'Ukladám...';
+
+  const newOverrides = { ...dayOverrides };
+  if (_daySettingsSelected === null) {
+    delete newOverrides[_daySettingsDate];
+  } else {
+    newOverrides[_daySettingsDate] = _daySettingsSelected;
+  }
+
+  try {
+    await apiCall('updateConfig', { config: { DAY_OVERRIDES: JSON.stringify(newOverrides) } });
+    dayOverrides = newOverrides;
+    closeOverlay('overlay-day-settings');
+    renderAdminCal();
+    renderCalendar();
+  } catch (e) {
+    alert('Chyba pri ukladaní: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Uložiť';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  ADMIN — NASTAVENIA
+// ═══════════════════════════════════════════════════════════════════
+
+function renderSettings() {
+  document.getElementById('cfg-admin-email').value = adminEmail || '';
+  document.getElementById('cfg-slots').value       = slotsPerDay;
+  renderBlockedDatesList();
+}
+
+function renderBlockedDatesList() {
+  const list = document.getElementById('blocked-dates-list');
+  list.innerHTML = '';
+  if (!blockedDates.length) {
+    list.innerHTML = '<span style="color:var(--muted);font-size:0.84rem">Žiadne blokované dni</span>';
+    return;
+  }
+  [...blockedDates].sort().forEach(d => {
     const tag = document.createElement('div');
-    tag.className='blocked-date-tag';
-    tag.innerHTML=fmtDate(d)+' <span style="font-size:.72rem">('+getDayName(d)+')</span> <button onclick="removeBlockedDate(\''+d+'\')">✕</button>';
+    tag.className = 'blocked-date-tag';
+    tag.innerHTML = fmtDate(d) + ' <span style="font-size:0.72rem;color:#b91c1c">(' + getDayName(d) + ')</span> <button onclick="removeBlockedDate(\'' + d + '\')">✕</button>';
     list.appendChild(tag);
   });
 }
 
-async function addBlockedDate() {
-  const d = document.getElementById('scfg-new-blocked').value;
-  if (!d) return alert('Vyberte dátum.');
-  if (servisBlocked.includes(d)) return alert('Tento dátum je už blokovaný.');
-  if (!SERVIS_URL) return alert('Nie je nastavené Servis API URL.');
-  servisBlocked.push(d);
+async function saveSettings() {
+  const email = document.getElementById('cfg-admin-email').value.trim();
+  const slots = parseInt(document.getElementById('cfg-slots').value) || 2;
   try {
-    await apiCall(SERVIS_URL,'updateConfig',{config:{BLOCKED_DATES:servisBlocked.join(',')}});
-    document.getElementById('scfg-new-blocked').value='';
-    renderBlockedList();
-  } catch(e) { servisBlocked=servisBlocked.filter(x=>x!==d); alert('Chyba: '+e.message); }
+    await apiCall('updateConfig', { config: { ADMIN_EMAIL: email, SLOTS_PER_DAY: slots } });
+    adminEmail  = email;
+    slotsPerDay = slots;
+    renderCalendar();
+    alert('Nastavenia boli uložené.');
+  } catch (e) { alert('Chyba: ' + e.message); }
+}
+
+async function addBlockedDate() {
+  const d = document.getElementById('new-blocked-date').value;
+  if (!d) return alert('Vyberte dátum.');
+  if (blockedDates.includes(d)) return alert('Tento dátum je už blokovaný.');
+  blockedDates.push(d);
+  try {
+    await apiCall('updateConfig', { config: { BLOCKED_DATES: blockedDates.join(',') } });
+    document.getElementById('new-blocked-date').value = '';
+    renderBlockedDatesList();
+    renderCalendar();
+  } catch (e) {
+    blockedDates = blockedDates.filter(x => x !== d);
+    alert('Chyba: ' + e.message);
+  }
 }
 
 async function removeBlockedDate(d) {
-  if (!SERVIS_URL) return alert('Nie je nastavené Servis API URL.');
-  servisBlocked=servisBlocked.filter(x=>x!==d);
+  blockedDates = blockedDates.filter(x => x !== d);
   try {
-    await apiCall(SERVIS_URL,'updateConfig',{config:{BLOCKED_DATES:servisBlocked.join(',')}});
-    renderBlockedList();
-  } catch(e) { servisBlocked.push(d); alert('Chyba: '+e.message); }
-}
-
-// ═══════════════════════════════════════════════════════════════════
-//  BICYKLE ADMIN
-// ═══════════════════════════════════════════════════════════════════
-
-function renderBikesAdmin() {
-  const list = document.getElementById('bikes-admin-list');
-  if (!list) return;
-  list.innerHTML = '';
-  if (!bikes.length) {
-    list.innerHTML='<div style="color:var(--muted);font-size:.84rem;padding:12px">Žiadne bicykle — nie je načítaná Požičovňa API.</div>'; return;
+    await apiCall('updateConfig', { config: { BLOCKED_DATES: blockedDates.join(',') } });
+    renderBlockedDatesList();
+    renderCalendar();
+  } catch (e) {
+    blockedDates.push(d);
+    alert('Chyba: ' + e.message);
   }
-  bikes.forEach(b => {
-    const card = document.createElement('div');
-    card.className='bike-card';
-    card.innerHTML=
-      '<div class="bike-emoji">'+(b.emoji||'🚲')+'</div>'+
-      '<div class="bike-info">'+
-        '<div class="bike-name">'+escHtml(b.name)+'</div>'+
-        '<div class="bike-meta">'+escHtml(b.size||'')+(b.spec?' · '+escHtml(b.spec):'')+'</div>'+
-      '</div>'+
-      '<div class="bike-actions">'+
-        '<button class="btn btn-ghost btn-sm" onclick="openBikeModal(\''+b.id+'\')">✏️ Upraviť</button>'+
-      '</div>';
-    list.appendChild(card);
-  });
-}
-
-function defaultPricingTiers() {
-  return [
-    {label:'1 deň',minDays:1,maxDays:1,pricePerDay:45},
-    {label:'2 dni',minDays:2,maxDays:2,pricePerDay:40},
-    {label:'3 – 5 dní',minDays:3,maxDays:5,pricePerDay:35},
-    {label:'6 – 7 dní',minDays:6,maxDays:7,pricePerDay:30},
-    {label:'8 – 15 dní',minDays:8,maxDays:15,pricePerDay:27},
-    {label:'15 – 30 dní',minDays:15,maxDays:30,pricePerDay:25},
-    {label:'30+ dní',minDays:31,maxDays:9999,pricePerDay:23}
-  ];
-}
-
-function openBikeModal(id) {
-  const b = bikes.find(x=>x.id===id);
-  if (!b) return;
-  editingBikeId = id;
-  const pricing = b.pricing||defaultPricingTiers();
-  const priceRows = pricing.map(t=>
-    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:.84rem">'+
-    '<span style="flex:0 0 110px;color:var(--muted)">'+escHtml(t.label)+'</span>'+
-    '<input type="number" class="eb-price-input" data-label="'+escHtml(t.label)+'" data-min="'+t.minDays+'" data-max="'+t.maxDays+'" value="'+t.pricePerDay+'" style="width:80px;padding:6px 9px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit"> €/deň'+
-    '</div>'
-  ).join('');
-
-  document.getElementById('bike-edit-form').innerHTML =
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Emoji</label><input type="text" id="eb-emoji" value="'+escHtml(b.emoji||'')+'"></div>'+
-      '<div class="form-group"><label>Názov</label><input type="text" id="eb-name" value="'+escHtml(b.name||'')+'"></div>'+
-    '</div>'+
-    '<div class="form-row">'+
-      '<div class="form-group"><label>Veľkosť</label><input type="text" id="eb-size" value="'+escHtml(b.size||'')+'"></div>'+
-      '<div class="form-group"><label>Špecifikácia</label><input type="text" id="eb-spec" value="'+escHtml(b.spec||'')+'"></div>'+
-    '</div>'+
-    '<div class="form-group"><label>URL obrázku</label><input type="url" id="eb-image" value="'+escHtml(b.image||'')+'"></div>'+
-    '<div class="fsec">Cenník</div>'+
-    priceRows;
-
-  openOverlay('overlay-bike');
-}
-
-async function saveBike() {
-  const b = bikes.find(x=>x.id===editingBikeId);
-  if (!b) return;
-  if (!RENTAL_URL) return alert('Nie je nastavené Požičovňa API URL.');
-  const priceInputs = document.querySelectorAll('#bike-edit-form .eb-price-input');
-  const pricing = Array.from(priceInputs).map(inp=>({
-    label:inp.dataset.label, minDays:Number(inp.dataset.min), maxDays:Number(inp.dataset.max), pricePerDay:parseFloat(inp.value)||0
-  }));
-  const data = {
-    id:b.id,
-    name:document.getElementById('eb-name').value.trim(),
-    size:document.getElementById('eb-size').value.trim(),
-    spec:document.getElementById('eb-spec').value.trim(),
-    emoji:document.getElementById('eb-emoji').value.trim(),
-    image:document.getElementById('eb-image').value.trim(),
-    pricing
-  };
-  const btn=document.getElementById('bike-save-btn');
-  btn.disabled=true; btn.textContent='Ukladám...';
-  try {
-    const result=await apiCall(RENTAL_URL,'updateBike',data);
-    if (!result||result.updated===false) throw new Error('Bicykel nebol nájdený v Sheets.');
-    Object.assign(b,data);
-    closeOverlay('overlay-bike');
-    renderBikesAdmin();
-  } catch(e) { alert('Chyba: '+e.message); }
-  finally { btn.disabled=false; btn.textContent='Uložiť zmeny'; }
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1773,30 +1525,44 @@ async function saveBike() {
 async function init() {
   const loadingEl = document.getElementById('loading-screen');
 
-  if (sessionStorage.getItem('adminLoggedIn') === '1') {
-    document.getElementById('view-admin').classList.add('active');
-    document.getElementById('cfg-servis-url').value = SERVIS_URL;
-    document.getElementById('cfg-rental-url').value = RENTAL_URL;
-    // Skry loading okamžite, dáta načítaj na pozadí
-    loadingEl.classList.add('hidden');
-    setTimeout(() => loadingEl.style.display = 'none', 400);
-    renderOverviewCalendar();
-    renderStats();
-    if (!SERVIS_URL || !RENTAL_URL) {
-      document.getElementById('overview-config-banner').style.display = 'block';
-    }
-    loadAll().then(() => {
-      renderOverviewCalendar();
-      renderStats();
-    });
-  } else {
-    document.getElementById('view-login').classList.add('active');
-    loadingEl.classList.add('hidden');
-    setTimeout(() => loadingEl.style.display = 'none', 400);
+  // Embed mód — skryje hlavičku pri ?embed=1
+  if (new URLSearchParams(window.location.search).get('embed') === '1') {
+    document.body.classList.add('embed');
   }
+  // Skryje hlavičku pri načítaní v iframe
+  if (window.self !== window.top) {
+    document.body.classList.add('in-iframe');
+  }
+
+  if (!API_URL) {
+    document.getElementById('config-banner').classList.add('show');
+    setSyncState('error');
+  } else {
+    try { await refreshData(); }
+    catch (e) { console.warn('Init error:', e); }
+  }
+
+  renderCalendar();
+  loadingEl.classList.add('hidden');
+  setTimeout(() => loadingEl.style.display = 'none', 400);
 }
 
 init();
+
+// ═══════════════════════════════════════════════════════════════════
+//  IFRAME HEIGHT REPORTING (pre embed na Shoptet)
+// ═══════════════════════════════════════════════════════════════════
+
+function reportHeight() {
+  const anyOpen = document.querySelector('.overlay.open');
+  const h = anyOpen
+    ? Math.max(document.documentElement.scrollHeight, window.screen.height)
+    : document.documentElement.scrollHeight;
+  window.parent.postMessage({ type: 'servisHeight', height: h }, '*');
+}
+const _resObs = new ResizeObserver(reportHeight);
+_resObs.observe(document.documentElement);
+reportHeight();
 </script>
 </body>
 </html>
