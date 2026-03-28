@@ -1427,7 +1427,7 @@ function updateRentalPrice() {
   const from    = document.getElementById('rf-from')?.value;
   const to      = document.getElementById('rf-to')?.value;
   const cbs     = document.querySelectorAll('.rf-bike-cb:checked');
-  const bikeIds = Array.from(cbs).map(c=>c.value);
+  const bikeIds = Array.from(cbs).map(c=>Number(c.value));
   const row     = document.getElementById('rf-price-row');
   if (!row) return;
   if (!from||!to||!bikeIds.length) { row.textContent=''; return; }
@@ -1443,7 +1443,7 @@ async function saveRentalReservation() {
   const surname = document.getElementById('rf-surname').value.trim();
   const phone   = document.getElementById('rf-phone').value.trim();
   const email   = document.getElementById('rf-email').value.trim();
-  const bikeIds = Array.from(document.querySelectorAll('.rf-bike-cb:checked')).map(c=>c.value);
+  const bikeIds = Array.from(document.querySelectorAll('.rf-bike-cb:checked')).map(c=>Number(c.value));
 
   if (!from||!to)          return alert('Vyplňte dátumy.');
   if (from>to)             return alert('Dátum OD musí byť skôr ako DO.');
