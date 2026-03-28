@@ -130,12 +130,12 @@ header .nav-btns { display: flex; gap: 8px; align-items: center; }
 .cal-day.past .day-num, .cal-day.weekend .day-num, .cal-day.holiday .day-num { color: #bbb; }
 
 /* Slot badge */
-.slot-badge { font-size: 0.64rem; font-weight: 700; padding: 2px 7px; border-radius: 3px; white-space: nowrap; }
+.slot-badge { font-size: 0.64rem; font-weight: 700; padding: 2px 5px; border-radius: 3px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; display: block; box-sizing: border-box; }
 .slot-badge.free-2 { background: #dcfce7; color: #15803d; }
 .slot-badge.free-1 { background: #fef9c3; color: #854d0e; }
 .slot-badge.free-0 { background: #fee2e2; color: #991b1b; }
 .slot-badge.closed   { background: #f1f5f9; color: #94a3b8; }
-.slot-badge.holiday  { background: #e0e7ff; color: #3730a3; white-space: normal; word-break: break-word; line-height: 1.2; display: block; }
+.slot-badge.holiday  { background: #e0e7ff; color: #3730a3; }
 
 /* Legend */
 .legend { display: flex; gap: 14px; margin-top: 14px; font-size: 0.78rem; color: var(--muted); flex-wrap: wrap; }
@@ -289,6 +289,12 @@ body.embed .customer-wrap { padding-top: 16px; }
   .modal { padding: 20px 16px; }
   .admin-sidebar { display: none; }
   .admin-cal-wrap { grid-template-columns: 1fr; }
+}
+@media(max-width:420px) {
+  .cal-day { padding: 5px 2px; }
+  .cal-day .day-num { font-size: 0.75rem; }
+  .slot-badge { font-size: 0.55rem; padding: 1px 3px; }
+  .cal-dow { font-size: 0.6rem; letter-spacing: 0; }
 }
 </style>
 </head>
@@ -527,7 +533,7 @@ body.embed .customer-wrap { padding-top: 16px; }
       <div class="form-group">
         <label>Rok výroby (približný)</label>
         <input type="number" id="res-rok" placeholder="napr. 2019" min="1980" max="2030" oninput="checkBikeAge(this,'res-rok-warn')">
-        <div id="res-rok-warn" class="age-warning" style="display:none">Pri bicykloch starších ako 15 rokov je pred finálnym potvrdením termínu potrebná krátka obhliadka. O prijatí do servisu nerozhoduje samotný vek bicykla, ale jeho technický stav, bezpečnosť opravy, dostupnosť náhradných dielov a to, či je oprava vzhľadom na stav a hodnotu bicykla ešte rozumná a zmysluplná.
+        <div id="res-rok-warn" class="age-warning" style="display:none">VPri bicykloch starších ako 15 rokov je pred finálnym potvrdením termínu potrebná krátka obhliadka. O prijatí do servisu nerozhoduje samotný vek bicykla, ale jeho technický stav, bezpečnosť opravy, dostupnosť náhradných dielov a to, či je oprava vzhľadom na stav a hodnotu bicykla ešte rozumná a zmysluplná.
 </div>
       </div>
       <div class="form-group"></div>
@@ -946,7 +952,7 @@ function renderCalendar() {
       const badge = document.createElement('div');
       if (isHol) {
         badge.className = 'slot-badge holiday';
-        badge.textContent = getHolidayName(dtStr);
+        badge.textContent = 'Sviatok';
       } else if (isBlk) {
         badge.className = 'slot-badge closed';
         badge.textContent = 'Zatvorené';
@@ -1306,7 +1312,7 @@ function renderAdminCal() {
       const badge = document.createElement('div');
       if (isHol) {
         badge.className = 'slot-badge holiday';
-        badge.textContent = getHolidayName(dtStr);
+        badge.textContent = 'Sviatok';
       } else if (isBlk) {
         badge.className = 'slot-badge closed';
         badge.textContent = 'Zatv.';
