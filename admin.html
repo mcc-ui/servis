@@ -270,6 +270,9 @@ tr:hover td { background:#fafafa; }
     <div class="sidebar-item" id="si-emails" onclick="showPanel('emails',this)">
       <span class="si-icon">✉️</span> E-maily
     </div>
+    <div class="sidebar-item" id="si-blacklist" onclick="showPanel('blacklist',this)">
+      <span class="si-icon">🚫</span> Blacklist
+    </div>
     <div class="sidebar-item" id="si-settings" onclick="showPanel('settings',this)">
       <span class="si-icon">⚙️</span> Nastavenia
     </div>
@@ -493,6 +496,50 @@ tr:hover td { background:#fafafa; }
         </div>
       </div>
 
+      <!-- ── PANEL: BLACKLIST ── -->
+      <div class="admin-panel" id="panel-blacklist">
+        <div class="panel-title">Blacklist zákazníkov</div>
+        <p style="font-size:.84rem;color:var(--muted);margin-bottom:22px">Zákazníci so zhodným telefónnym číslom budú upozornení, že ich rezervácia vyžaduje manuálne schválenie. Admin dostane e-mail s upozornením ⚠️.</p>
+
+        <div class="settings-section">
+          <div class="settings-section-title">🔧 Servis — Blacklist</div>
+          <div class="card">
+            <div id="bl-servis-list"></div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+              <div style="font-size:.84rem;font-weight:600;margin-bottom:10px">Pridať zákazníka</div>
+              <div class="form-row">
+                <div class="form-group"><label>Meno</label><input type="text" id="bl-servis-name" placeholder="Ján Novák"></div>
+                <div class="form-group"><label>Telefón</label><input type="text" id="bl-servis-phone" placeholder="0900 123 456"></div>
+              </div>
+              <div class="form-group"><label>Dôvod</label><input type="text" id="bl-servis-reason" placeholder="napr. Neplatič, Vandalizmus…"></div>
+              <div style="display:flex;gap:10px;margin-top:12px">
+                <button class="btn btn-primary btn-sm" onclick="addBlacklistEntry('servis')">+ Pridať</button>
+                <button class="btn btn-ghost btn-sm" onclick="saveBlacklist('servis')">💾 Uložiť zoznam</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">🚲 Požičovňa — Blacklist</div>
+          <div class="card">
+            <div id="bl-rental-list"></div>
+            <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+              <div style="font-size:.84rem;font-weight:600;margin-bottom:10px">Pridať zákazníka</div>
+              <div class="form-row">
+                <div class="form-group"><label>Meno</label><input type="text" id="bl-rental-name" placeholder="Ján Novák"></div>
+                <div class="form-group"><label>Telefón</label><input type="text" id="bl-rental-phone" placeholder="0900 123 456"></div>
+              </div>
+              <div class="form-group"><label>Dôvod</label><input type="text" id="bl-rental-reason" placeholder="napr. Neplatič, Vandalizmus…"></div>
+              <div style="display:flex;gap:10px;margin-top:12px">
+                <button class="btn btn-primary btn-sm" onclick="addBlacklistEntry('rental')">+ Pridať</button>
+                <button class="btn btn-ghost btn-sm" onclick="saveBlacklist('rental')">💾 Uložiť zoznam</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── PANEL: NASTAVENIA ── -->
       <div class="admin-panel" id="panel-settings">
         <div class="panel-title">Nastavenia</div>
@@ -647,6 +694,8 @@ let servisDayOverrides = {};
 let rentalRes  = [];
 let bikes      = [];
 let documents  = {};
+let servisBlacklist = [];
+let rentalBlacklist = [];
 
 let editingServisId = null;
 let editingRentalId = null;
@@ -718,6 +767,7 @@ async function loadServis() {
     if (d.emailAdminBody     !== undefined) document.getElementById('se-admin-body').value      = d.emailAdminBody     || '';
     if (d.serviceConditions  !== undefined) document.getElementById('se-conditions').value      = d.serviceConditions  || '';
     if (d.thankyouHtml       !== undefined) { const el=document.getElementById('doc-thankyou-servis'); if(el) el.value = d.thankyouHtml || ''; }
+    if (Array.isArray(d.blacklist)) { servisBlacklist = d.blacklist; renderBlacklist('servis'); }
     setStatus('servis', 'online');
   } catch (e) {
     console.warn('Servis API chyba:', e.message);
@@ -743,6 +793,7 @@ async function loadRental() {
     if (d.emailAdminSubj    !== undefined) document.getElementById('re-admin-subj').value    = d.emailAdminSubj    || '';
     if (d.emailAdminBody    !== undefined) document.getElementById('re-admin-body').value    = d.emailAdminBody    || '';
     if (d.thankyouHtml      !== undefined) { const el=document.getElementById('doc-thankyou-rental'); if(el) el.value = d.thankyouHtml || ''; }
+    if (Array.isArray(d.blacklist)) { rentalBlacklist = d.blacklist; renderBlacklist('rental'); }
     setStatus('rental', 'online');
   } catch (e) {
     console.warn('Požičovňa API chyba:', e.message);
@@ -759,12 +810,13 @@ function showPanel(name, el) {
   document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   if (el) el.classList.add('active');
-  const titles = { overview:'Prehľad', servis:'Servis', rental:'Požičovňa', documents:'Dokumenty', emails:'E-maily', settings:'Nastavenia' };
+  const titles = { overview:'Prehľad', servis:'Servis', rental:'Požičovňa', documents:'Dokumenty', emails:'E-maily', blacklist:'Blacklist', settings:'Nastavenia' };
   document.getElementById('topbar-title').textContent = titles[name] || '';
   if (name === 'servis')    { renderServisTable(); renderScCal(); }
   if (name === 'rental')    renderRentalTable();
   if (name === 'documents') renderDocumentsEditor();
   if (name === 'settings')  renderSettingsPanel();
+  if (name === 'blacklist') { renderBlacklist('servis'); renderBlacklist('rental'); }
   if (name === 'overview')  { renderOverviewCalendar(); renderStats(); }
 }
 
@@ -1309,6 +1361,12 @@ async function saveServisReservation() {
 
   if (!SERVIS_URL) return alert('Nie je nastavené Servis API URL.');
 
+  const blMatch = checkBlacklist(telefon, servisBlacklist);
+  if (blMatch) {
+    const ok = confirm('⚠️ BLACKLIST\nZákazník: ' + (blMatch.name || telefon) + '\nTelefón: ' + blMatch.phone + '\nDôvod: ' + (blMatch.reason || '—') + '\n\nNapriek tomu uložiť rezerváciu?');
+    if (!ok) return;
+  }
+
   const btn = document.getElementById('servis-save-btn');
   btn.disabled=true; btn.textContent='Ukladám...';
   try {
@@ -1452,6 +1510,12 @@ async function saveRentalReservation() {
   if (!bikeIds.length)     return alert('Vyberte aspoň jeden bicykel.');
   if (!RENTAL_URL)         return alert('Nie je nastavené Požičovňa API URL.');
 
+  const blMatch = checkBlacklist(phone, rentalBlacklist);
+  if (blMatch) {
+    const ok = confirm('⚠️ BLACKLIST\nZákazník: ' + (blMatch.name || phone) + '\nTelefón: ' + blMatch.phone + '\nDôvod: ' + (blMatch.reason || '—') + '\n\nNapriek tomu uložiť rezerváciu?');
+    if (!ok) return;
+  }
+
   const {days,total} = calcRentalPrice(bikeIds, from, to);
 
   const btn = document.getElementById('rental-save-btn');
@@ -1573,6 +1637,68 @@ async function saveEmailTemplates(system) {
     }});
     alert('E-mailové šablóny boli uložené!');
   } catch(e) { alert('Chyba: '+e.message); }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  BLACKLIST
+// ═══════════════════════════════════════════════════════════════════
+
+function normalizePhone(p) {
+  return String(p || '').replace(/[\s\-().+]/g, '');
+}
+
+function checkBlacklist(phone, blacklist) {
+  const norm = normalizePhone(phone);
+  if (!norm) return null;
+  return blacklist.find(e => {
+    const en = normalizePhone(e.phone);
+    return en && (en === norm || norm.includes(en) || en.includes(norm));
+  }) || null;
+}
+
+function renderBlacklist(system) {
+  const list = system === 'servis' ? servisBlacklist : rentalBlacklist;
+  const el   = document.getElementById('bl-' + system + '-list');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:.84rem;padding:6px 0">Blacklist je prázdny.</div>';
+    return;
+  }
+  el.innerHTML = list.map((e, i) =>
+    '<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:.84rem">' +
+    '<div style="flex:1"><strong>' + escHtml(e.name || '—') + '</strong> &nbsp;·&nbsp; ' + escHtml(e.phone) +
+    (e.reason ? '<br><span style="color:var(--muted);font-size:.78rem">' + escHtml(e.reason) + '</span>' : '') +
+    '</div>' +
+    '<button class="btn btn-red btn-sm" onclick="removeBlacklistEntry(\'' + system + '\',' + i + ')">🗑</button>' +
+    '</div>'
+  ).join('');
+}
+
+function addBlacklistEntry(system) {
+  const phone  = document.getElementById('bl-' + system + '-phone').value.trim();
+  if (!phone) return alert('Zadajte telefónne číslo.');
+  const name   = document.getElementById('bl-' + system + '-name').value.trim();
+  const reason = document.getElementById('bl-' + system + '-reason').value.trim();
+  const list   = system === 'servis' ? servisBlacklist : rentalBlacklist;
+  list.push({ name, phone, reason });
+  renderBlacklist(system);
+  ['name','phone','reason'].forEach(f => { document.getElementById('bl-' + system + '-' + f).value = ''; });
+}
+
+function removeBlacklistEntry(system, idx) {
+  const list = system === 'servis' ? servisBlacklist : rentalBlacklist;
+  list.splice(idx, 1);
+  renderBlacklist(system);
+}
+
+async function saveBlacklist(system) {
+  const url  = system === 'servis' ? SERVIS_URL : RENTAL_URL;
+  const list = system === 'servis' ? servisBlacklist : rentalBlacklist;
+  if (!url) return alert('Nie je nastavená API URL pre ' + (system === 'servis' ? 'Servis' : 'Požičovňu') + '.');
+  try {
+    await apiCall(url, 'updateConfig', { config: { BLACKLIST: JSON.stringify(list) } });
+    alert('Blacklist bol uložený!');
+  } catch(e) { alert('Chyba: ' + e.message); }
 }
 
 async function saveServiceConditions() {
