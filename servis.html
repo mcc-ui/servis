@@ -510,7 +510,10 @@ body.embed .customer-wrap { padding-top: 16px; }
     <div class="form-row">
       <div class="form-group">
         <label>Telefón *</label>
-        <input type="tel" id="res-telefon" placeholder="+421 900 000 000">
+        <input type="tel" id="res-telefon" placeholder="+421 900 000 000" oninput="checkPhoneBlacklist(this.value)">
+        <div id="res-blacklist-warn" style="display:none;margin-top:6px;padding:8px 12px;background:#fef9c3;border:1px solid #ca8a04;border-radius:6px;font-size:.8rem;color:#854d0e">
+          ⚠️ Vaša rezervácia bude vyžadovať <strong>manuálne schválenie</strong> pred potvrdením termínu.
+        </div>
       </div>
       <div class="form-group">
         <label>E-mail</label>
@@ -651,6 +654,7 @@ let adminEmail        = '';
 let dayOverrides      = {};   // { 'yyyy-mm-dd': počet_slotov }
 let serviceConditions = '';
 let thankyouHtml      = '';
+let blacklist         = [];
 
 let editingResId = null;
 
@@ -701,6 +705,7 @@ async function refreshData() {
     dayOverrides      = data.dayOverrides || {};
     if (data.serviceConditions !== undefined) serviceConditions = data.serviceConditions || '';
     if (data.thankyouHtml      !== undefined) thankyouHtml      = data.thankyouHtml      || '';
+    if (Array.isArray(data.blacklist))        blacklist         = data.blacklist;
     renderCalendar();
   } catch (e) {
     console.warn('Chyba načítania:', e.message);
@@ -1007,6 +1012,24 @@ function toggleBike2() {
   }
 }
 
+function normalizePhone(p) {
+  return String(p || '').replace(/[\s\-().+]/g, '');
+}
+
+function checkBlacklistMatch(phone) {
+  const norm = normalizePhone(phone);
+  if (!norm) return null;
+  return blacklist.find(e => {
+    const en = normalizePhone(e.phone);
+    return en && (en === norm || norm.includes(en) || en.includes(norm));
+  }) || null;
+}
+
+function checkPhoneBlacklist(phone) {
+  const match = checkBlacklistMatch(phone);
+  document.getElementById('res-blacklist-warn').style.display = match ? 'block' : 'none';
+}
+
 function openTermsModal(e) {
   e && e.preventDefault();
   document.getElementById('terms-content').innerHTML =
@@ -1024,8 +1047,9 @@ function openReservationModal(dateStr) {
   document.getElementById('res-model').value      = '';
   document.getElementById('res-rok').value        = '';
   document.getElementById('res-popis').value      = '';
-  document.getElementById('res-rok-warn').style.display  = 'none';
-  document.getElementById('res-terms-check').checked     = false;
+  document.getElementById('res-rok-warn').style.display       = 'none';
+  document.getElementById('res-blacklist-warn').style.display = 'none';
+  document.getElementById('res-terms-check').checked          = false;
   // Reset 2. bicykel
   document.getElementById('bike2-section').style.display   = 'none';
   document.getElementById('bike2-toggle-row').style.display = 'block';
@@ -1065,6 +1089,8 @@ async function submitReservation() {
   // Overenie voľnosti termínu
   if (getFreeSlots(datum) === 0) return alert('Tento termín je žiaľ plný. Vyberte iný dátum.');
 
+  const blMatch = checkBlacklistMatch(telefon);
+
   const btn = document.getElementById('submit-res-btn');
   btn.disabled    = true;
   btn.textContent = 'Odosielam...';
@@ -1072,6 +1098,7 @@ async function submitReservation() {
   try {
     const payload = { datum, meno, priezvisko, telefon, email, znacka, model, rokVyroby, popis };
     if (bike2visible && znacka2) Object.assign(payload, { znacka2, model2, rokVyroby2 });
+    if (blMatch) payload.blacklisted = true;
     const result = await apiCall('addReservation', payload);
     reservations.push({ id: result.id, ...payload });
     renderCalendar();
