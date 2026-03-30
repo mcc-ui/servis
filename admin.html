@@ -512,9 +512,9 @@ tr:hover td { background:#fafafa; }
                 <div class="form-group"><label>Telefón</label><input type="text" id="bl-servis-phone" placeholder="0900 123 456"></div>
               </div>
               <div class="form-group"><label>Dôvod</label><input type="text" id="bl-servis-reason" placeholder="napr. Neplatič, Vandalizmus…"></div>
-              <div style="display:flex;gap:10px;margin-top:12px">
-                <button class="btn btn-primary btn-sm" onclick="addBlacklistEntry('servis')">+ Pridať</button>
-                <button class="btn btn-ghost btn-sm" onclick="saveBlacklist('servis')">💾 Uložiť zoznam</button>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+                <button class="btn btn-primary btn-sm" onclick="addBlacklistEntry('servis')">+ Pridať a uložiť</button>
+                <span id="bl-servis-status" style="font-size:.78rem"></span>
               </div>
             </div>
           </div>
@@ -531,9 +531,9 @@ tr:hover td { background:#fafafa; }
                 <div class="form-group"><label>Telefón</label><input type="text" id="bl-rental-phone" placeholder="0900 123 456"></div>
               </div>
               <div class="form-group"><label>Dôvod</label><input type="text" id="bl-rental-reason" placeholder="napr. Neplatič, Vandalizmus…"></div>
-              <div style="display:flex;gap:10px;margin-top:12px">
-                <button class="btn btn-primary btn-sm" onclick="addBlacklistEntry('rental')">+ Pridať</button>
-                <button class="btn btn-ghost btn-sm" onclick="saveBlacklist('rental')">💾 Uložiť zoznam</button>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+                <button class="btn btn-primary btn-sm" onclick="addBlacklistEntry('rental')">+ Pridať a uložiť</button>
+                <span id="bl-rental-status" style="font-size:.78rem"></span>
               </div>
             </div>
           </div>
@@ -1674,7 +1674,7 @@ function renderBlacklist(system) {
   ).join('');
 }
 
-function addBlacklistEntry(system) {
+async function addBlacklistEntry(system) {
   const phone  = document.getElementById('bl-' + system + '-phone').value.trim();
   if (!phone) return alert('Zadajte telefónne číslo.');
   const name   = document.getElementById('bl-' + system + '-name').value.trim();
@@ -1683,22 +1683,30 @@ function addBlacklistEntry(system) {
   list.push({ name, phone, reason });
   renderBlacklist(system);
   ['name','phone','reason'].forEach(f => { document.getElementById('bl-' + system + '-' + f).value = ''; });
+  await saveBlacklist(system, true);
 }
 
-function removeBlacklistEntry(system, idx) {
+async function removeBlacklistEntry(system, idx) {
   const list = system === 'servis' ? servisBlacklist : rentalBlacklist;
   list.splice(idx, 1);
   renderBlacklist(system);
+  await saveBlacklist(system, true);
 }
 
-async function saveBlacklist(system) {
+async function saveBlacklist(system, silent) {
   const url  = system === 'servis' ? SERVIS_URL : RENTAL_URL;
   const list = system === 'servis' ? servisBlacklist : rentalBlacklist;
   if (!url) return alert('Nie je nastavená API URL pre ' + (system === 'servis' ? 'Servis' : 'Požičovňu') + '.');
+  const statusEl = document.getElementById('bl-' + system + '-status');
+  if (statusEl) { statusEl.textContent = 'Ukladám…'; statusEl.style.color = 'var(--muted)'; }
   try {
     await apiCall(url, 'updateConfig', { config: { BLACKLIST: JSON.stringify(list) } });
-    alert('Blacklist bol uložený!');
-  } catch(e) { alert('Chyba: ' + e.message); }
+    if (statusEl) { statusEl.textContent = '✓ Uložené'; statusEl.style.color = '#15803d'; }
+    if (!silent) alert('Blacklist bol uložený!');
+  } catch(e) {
+    if (statusEl) { statusEl.textContent = '✗ Chyba uloženia'; statusEl.style.color = '#dc2626'; }
+    alert('Chyba: ' + e.message);
+  }
 }
 
 async function saveServiceConditions() {
