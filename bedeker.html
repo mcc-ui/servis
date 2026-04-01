@@ -361,6 +361,9 @@ footer .logo { margin-bottom: 1rem; }
     <button class="cat-btn" data-cat="family"><span class="icon">&#128694;</span> Rodinné</button>
   </div>
 
+  <div id="routes-loading" style="text-align:center;padding:48px;font-size:1.1rem;color:#64748b;display:none;">
+    Načítavam trasy&#8230;
+  </div>
   <div class="routes-grid" id="routes-grid">
   </div>
 
@@ -403,41 +406,29 @@ footer .logo { margin-bottom: 1rem; }
 </footer>
 
 <script>
-// ── Dáta trás (inline — funguje na Shoptete aj kdekoľvek inde) ─────────────
-const routes = [
-  {id:1,cat:"road",name:"Pezinská Baba z Perneka",dist:"6.4 km",elev:"245 m",grade:"3.9 %",maxGrade:"6 %",diff:2,diffLabel:"Stredná",type:"Cestná (asfalt)",desc:"Klasické stúpanie z Perneka na Pezinskú Babu cez sériu serpentín borovicovým lesom. Obľúbený tréningový kopec bratislavských cestárov. Kvalitný asfalt, mierny sklon — ideálne na prvé horské skúsenosti.",start:[48.3678,17.1439],end:[48.3498,17.1966],waypoints:[[48.3678,17.1439],[48.3498,17.1966]],center:[48.3588,17.1703],zoom:13},
-  {id:2,cat:"road",name:"Pezinská Baba z Pezinka",dist:"5.1 km",elev:"224 m",grade:"4.3 %",maxGrade:"6 %",diff:2,diffLabel:"Stredná",type:"Cestná (asfalt)",desc:"Východná strana Pezinskej Baby z mesta Pezinok. Mierne náročnejší sklon ako z Perneka, ale kratšia vzdialenosť. Výborný asfalt, populárny víkendový cieľ.",start:[48.2855,17.2702],end:[48.3498,17.1966],waypoints:[[48.2855,17.2702],[48.3498,17.1966]],center:[48.3177,17.2334],zoom:12},
-  {id:3,cat:"road",name:"Kuchyňa \u2013 Vývrať \u2013 Hubálová",dist:"7.1 km",elev:"283 m",grade:"3.9 %",maxGrade:"10.1 %",diff:3,diffLabel:"Stredná-ťažká",type:"Cestná / gravel (asfalt, spodok nespevnený)",desc:"Stúpanie z odbočky medzi Kuchyňou a Rohožníkom na sedlo Hubálová. Postupný nástup cez les s prudkým záverom na otvorenej lúke. Posledný kilometer dosahuje 10 % sklon — skúška charakteru.",start:[48.4195,17.188],end:[48.4026,17.2348],waypoints:[[48.4195,17.188],[48.41,17.21],[48.4026,17.2348]],center:[48.4111,17.2114],zoom:13},
-  {id:4,cat:"road",name:"Biely kríž z Rače",dist:"4.4 km",elev:"328 m",grade:"7.5 %",maxGrade:"20 %",diff:4,diffLabel:"Veľmi ťažká",type:"Cestná (asfalt, miestami poškodený)",desc:"Najťažšie stúpanie Bratislavského kraja, prezývané \u201ERačianske Mortirolo\u201C. Brutálny úvod s 10\u201320 % sklonom, krátky oddych, a záverečný kopec na Biely kríž. Len pre trénovaných.",start:[48.2118,17.1534],end:[48.182,17.1281],waypoints:[[48.2118,17.1534],[48.182,17.1281]],center:[48.1969,17.1408],zoom:13},
-  {id:5,cat:"road",name:"Šenkvická (z Limbachu)",dist:"5.4 km",elev:"364 m",grade:"6.8 %",maxGrade:"\u2014",diff:3,diffLabel:"Ťažká",type:"Cestná (výborný asfalt)",desc:"Dlhé a konzistentné stúpanie severnou stranou z Limbachu. Nie je extrémne strmé, ale neúprosne konštantné — na rozdiel od Bieleho kríža tu niet oddychu. Odmena: panoráma Malých Karpát.",start:[48.2889,17.2222],end:[48.32,17.19],waypoints:[[48.2889,17.2222],[48.32,17.19]],center:[48.3045,17.2061],zoom:13},
-  {id:6,cat:"road",name:"Modra \u2013 Zochova chata \u2013 Hvezdáreň",dist:"7.3 km",elev:"290 m",grade:"4.3 %",maxGrade:"9.1 %",diff:2,diffLabel:"Stredná",type:"Cestná (asfalt, používaná na preteky)",desc:"Stúpanie z Modranskej Harmónie na Hvezdáreň cez Zochovu chatu. Pravidelný sklon s krátkymi strmšími úsekmi. Tradičná trasa časovky — otestujte sa proti miestnym rekordom!",start:[48.3568,17.308],end:[48.3731,17.2744],waypoints:[[48.3568,17.308],[48.3834,17.2704],[48.3731,17.2744]],center:[48.365,17.2912],zoom:13},
-  {id:7,cat:"road",name:"Kamzík (z Bratislavy)",dist:"2\u20133.7 km",elev:"160\u2013263 m",grade:"\u2014",maxGrade:"\u2014",diff:2,diffLabel:"Stredná",type:"Cestná (viacero variantov)",desc:"Bratislavský domáci kopec s viacerými prístupovými cestami. Najkratšia cesta z Koliby, najdlhšia cez Červený most. Ideálny na rýchle intervalové tréningy po práci.",start:[48.17,17.105],end:[48.1819,17.0934],waypoints:[[48.17,17.105],[48.1819,17.0934]],center:[48.176,17.0992],zoom:14},
-  {id:8,cat:"road",name:"Tour de Malé Karpaty",dist:"131 km",elev:"2 520 m",grade:"\u2014",maxGrade:"\u2014",diff:4,diffLabel:"Veľmi ťažká",type:"Cestná (asfalt, krátky nespevnený úsek Hubálová)",desc:"Kráľovský okruh cez 7 stúpaní Malých Karpát: Kamzík, Biely kríž, Pezinská Baba, Čmelok, Čermáková lúka, Hubálová a späť. Celodenná epická jazda pre tých, čo chcú spoznať všetky kopce naraz.",start:[48.148,17.107],end:[48.148,17.107],waypoints:[[48.148,17.107],[48.1819,17.0934],[48.182,17.1281],[48.3498,17.1966],[48.3834,17.2704],[48.4026,17.2348],[48.4195,17.188],[48.148,17.107]],center:[48.28,17.17],zoom:11},
-  {id:9,cat:"gravel",name:"Malacky \u2013 Rohožník \u2013 Kuchyňa \u2013 Pernek",dist:"35\u201352 km",elev:"~400 m",grade:"\u2014",maxGrade:"\u2014",diff:2,diffLabel:"Stredná",type:"Mix (cesta + lesné cesty)",desc:"Základný okruh zo srdca Záhoria k úpätiu Malých Karpát. Krátka verzia 35 km obchádza kopce, rozšírená 52 km verzia zahŕňa výjazd na Pezinskú Babu. Kombinácia roviny a miernych kopcov.",start:[48.4363,17.02],end:[48.4363,17.02],waypoints:[[48.4363,17.02],[48.4585,17.1666],[48.4065,17.1553],[48.3678,17.1439],[48.4363,17.02]],center:[48.41,17.09],zoom:12},
-  {id:10,cat:"gravel",name:"Pernek \u2013 Kuchyňa \u2013 Rohožník (okruh)",dist:"35 km",elev:"~350 m",grade:"\u2014",maxGrade:"\u2014",diff:2,diffLabel:"Stredná",type:"Cestná / gravel",desc:"Kompaktný okruh pod Malými Karpatmi spájajúci tri malebné obce. Striedanie asfaltových úsekov s lesnými cestami. Výborný na gravelový bicykel — dostatočne náročný, ale zvládnuteľný za poldňa.",start:[48.3678,17.1439],end:[48.3678,17.1439],waypoints:[[48.3678,17.1439],[48.4065,17.1553],[48.4585,17.1666],[48.3678,17.1439]],center:[48.41,17.155],zoom:12},
-  {id:11,cat:"gravel",name:"Rohožník \u2013 Sološnica",dist:"35 km",elev:"~300 m",grade:"\u2014",maxGrade:"\u2014",diff:2,diffLabel:"Stredná",type:"Cestná",desc:"Okruh po tichých cestách medzi Rohožníkom a Sološnicou — srdce Záhoria. Mierny terén s výhľadmi na Malé Karpaty. Málo dopravy, pokojná jazda.",start:[48.4585,17.1666],end:[48.4585,17.1666],waypoints:[[48.4585,17.1666],[48.4652,17.231],[48.4585,17.1666]],center:[48.462,17.1988],zoom:12},
-  {id:12,cat:"gravel",name:"Rohožník \u2013 Hubálová (Zochova chata)",dist:"48 km",elev:"~700 m",grade:"\u2014",maxGrade:"\u2014",diff:3,diffLabel:"Ťažká",type:"Cestná / gravel (posledný úsek nespevnený)",desc:"Z Rohožníka cez Kuchyňu a Vývrať na sedlo Hubálová s pokračovaním ku Zochovej chate. Nástup postupný, záver strmý. Odmena: výhľady z Hubálovej a občerstvenie na Zochovej chate.",start:[48.4585,17.1666],end:[48.3834,17.2704],waypoints:[[48.4585,17.1666],[48.4065,17.1553],[48.4195,17.188],[48.4026,17.2348],[48.3834,17.2704]],center:[48.421,17.2185],zoom:12},
-  {id:13,cat:"gravel",name:"Rohožník \u2013 Sološnica \u2013 Plavecký Mikuláš",dist:"52 km",elev:"~500 m",grade:"\u2014",maxGrade:"\u2014",diff:3,diffLabel:"Ťažká",type:"Cestná",desc:"Dlhší okruh smerom na sever cez Sološnicu do Plaveckého Mikuláša. Krajina sa mení z miernych kopcov na dramatickejšie skalné scenérie pod Plaveckým hradom.",start:[48.4585,17.1666],end:[48.4585,17.1666],waypoints:[[48.4585,17.1666],[48.4652,17.231],[48.4833,17.2573],[48.5093,17.305],[48.4833,17.2573],[48.4585,17.1666]],center:[48.484,17.2358],zoom:11},
-  {id:14,cat:"gravel",name:"Sološnica \u2013 Buková \u2013 Amonova lúka \u2013 Sklenný vrch",dist:"80 km",elev:"~1 500 m",grade:"\u2014",maxGrade:"\u2014",diff:4,diffLabel:"Veľmi ťažká",type:"Cestná / gravel / lesné cesty",desc:"Celodenný maratónsky okruh cez severné Malé Karpaty. Maximálne prevýšenie, divočina, ticho. Nutný dostatočný zásobovanie — na trase minimum obchodov. Pre skúsených gravelistov a MTB jazdcov.",start:[48.4652,17.231],end:[48.4652,17.231],waypoints:[[48.4652,17.231],[48.5418,17.3943],[48.4799,17.3064],[48.4652,17.231]],center:[48.5035,17.3127],zoom:11},
-  {id:15,cat:"gravel",name:"Pernek \u2013 Pezinská Baba \u2013 Pezinok",dist:"64 km",elev:"~800 m",grade:"\u2014",maxGrade:"\u2014",diff:3,diffLabel:"Ťažká",type:"Cestná",desc:"Prechod cez hlavný hrebeň Malých Karpát zo západu na východ. Z Perneka na Pezinskú Babu a zjazd do Pezinka s návratom cez Modru alebo vlakom. Klasická jednosmerná túra.",start:[48.3678,17.1439],end:[48.2855,17.2702],waypoints:[[48.3678,17.1439],[48.3498,17.1966],[48.2855,17.2702]],center:[48.3267,17.2071],zoom:12},
-  {id:16,cat:"gravel",name:"Okruh Rohožník \u2013 Doľany",dist:"48.9 km",elev:"797 m",grade:"\u2014",maxGrade:"\u2014",diff:3,diffLabel:"Ťažká",type:"Cestná / gravel",desc:"Technicky a fyzicky náročný okruh s takmer 800 m prevýšením. Krásna trasa cez lesy s výhľadmi na Záhorskú nížinu. Gravelový alebo trekingový bicykel ideálny.",start:[48.4585,17.1666],end:[48.4585,17.1666],waypoints:[[48.4585,17.1666],[48.4159,17.3787],[48.4585,17.1666]],center:[48.4372,17.2727],zoom:12},
-  {id:17,cat:"gravel",name:"Malokarpatská cyklomagistrála (003)",dist:"105\u2013128 km",elev:"231 m",grade:"\u2014",maxGrade:"\u2014",diff:3,diffLabel:"Ťažká",type:"Cestná / gravel (spevnený povrch)",desc:"Dlhá diaľková trasa z Vysokej pri Morave cez Jablonové, Pernek, Kuchyňu, Rohožník, Sološnicu, Plavecké Podhradie až po Dechtice. Oficiálna cyklomagistrála č. 003 — chrbtová kosť záhoráckej cyklistiky.",start:[48.3295,16.913],end:[48.5093,17.305],waypoints:[[48.3295,16.913],[48.3472,17.1037],[48.3678,17.1439],[48.4065,17.1553],[48.4585,17.1666],[48.4652,17.231],[48.4833,17.2573],[48.5093,17.305]],center:[48.42,17.11],zoom:10},
-  {id:18,cat:"gravel",name:"Štefánikova cyklomagistrála (047)",dist:"~100 km",elev:"~1 200 m",grade:"\u2014",maxGrade:"\u2014",diff:3,diffLabel:"Ťažká",type:"Mix (asfalt, gravel, lesné cesty)",desc:"Diaľková trasa z Bratislavy na Košariská — rodisko M. R. Štefánika. Prechod celými Malými Karpatmi od juhu na sever. Symbolická a fyzicky náročná jazda.",start:[48.148,17.107],end:[48.6706,17.5969],waypoints:[[48.148,17.107],[48.2855,17.2702],[48.3498,17.1966],[48.4026,17.2348],[48.4833,17.2573],[48.6706,17.5969]],center:[48.41,17.35],zoom:9},
-  {id:19,cat:"mtb",name:"Náučný chodník Pernek \u2013 Pezinok (N2003)",dist:"11.8 km",elev:"378 m",grade:"\u2014",maxGrade:"\u2014",diff:2,diffLabel:"Stredná",type:"MTB (asfalt, lesné cesty, trail)",desc:"Náučný cykloturistický chodník s 12 informačnými tabuľami o baníckej histórii. Stúpanie z Perneka, zjazd do Pezinka. Úsek medzi 7. a 8. zástavkou je strmý a technicky náročný — pozor na zjazde.",start:[48.3678,17.1439],end:[48.2855,17.2702],waypoints:[[48.3678,17.1439],[48.3498,17.1966],[48.2855,17.2702]],center:[48.3267,17.2071],zoom:12},
-  {id:20,cat:"mtb",name:"Náučný chodník okolím Perneka (N5001)",dist:"~8 km",elev:"~200 m",grade:"\u2014",maxGrade:"\u2014",diff:1,diffLabel:"Ľahká-stredná",type:"MTB / gravel",desc:"Kruhová trasa okolo Perneka, súčasť 30 km siete pernetských trailov. Vhodná na zoznámenie sa s terénom Malých Karpát. Informatívne tabule o prírode a histórii.",start:[48.3678,17.1439],end:[48.3678,17.1439],waypoints:[[48.3678,17.1439],[48.375,17.16],[48.37,17.175],[48.362,17.16],[48.3678,17.1439]],center:[48.3685,17.1595],zoom:14},
-  {id:21,cat:"mtb",name:"Sološnica \u2013 Vápenná \u2013 Plavecké Podhradie",dist:"9.7 km",elev:"557 m",grade:"\u2014",maxGrade:"\u2014",diff:3,diffLabel:"Ťažká",type:"MTB (technický terén)",desc:"Náročný terénny prechod cez vrch Vápenná (725 m). Strmé stúpanie aj zjazd. POZOR: Samotný vrchol Vápennej je v 5. stupni ochrany — cyklistika na vrchole zakázaná. Nádherné výhľady na Záhorie.",start:[48.4652,17.231],end:[48.4833,17.2573],waypoints:[[48.4652,17.231],[48.474,17.244],[48.4833,17.2573]],center:[48.4743,17.2442],zoom:13},
-  {id:22,cat:"mtb",name:"Trnavská Stovka (cez Rohožník)",dist:"118 km",elev:"~1 400 m",grade:"\u2014",maxGrade:"\u2014",diff:4,diffLabel:"Veľmi ťažká",type:"Mix cestná / MTB",desc:"Legendárna endurance trasa z Bratislavy cez 7 kopcov (Kamzík, Biely kríž, Pezinská Baba, Čmelok, Čermáková lúka, Hubálová) do Plaveckého Mikuláša. Celodenný maratón — ultra výzva pre tvrdých jazdcov.",start:[48.148,17.107],end:[48.5093,17.305],waypoints:[[48.148,17.107],[48.1819,17.0934],[48.182,17.1281],[48.3498,17.1966],[48.4026,17.2348],[48.4195,17.188],[48.4585,17.1666],[48.5093,17.305]],center:[48.33,17.206],zoom:10},
-  {id:23,cat:"mtb",name:"Plavecký Mikuláš \u2013 Amonova lúka \u2013 Hubálová",dist:"78 km",elev:"~1 800 m",grade:"\u2014",maxGrade:"\u2014",diff:4,diffLabel:"Veľmi ťažká",type:"MTB / lesné cesty",desc:"Náročný horský okruh zo severu Malých Karpát cez Amonovu lúku na sedlo Hubálová a späť. Maximum prevýšenia, minimum civilizácie. Len pre skúsených.",start:[48.5093,17.305],end:[48.5093,17.305],waypoints:[[48.5093,17.305],[48.4833,17.2573],[48.4799,17.3064],[48.4026,17.2348],[48.4652,17.231],[48.5093,17.305]],center:[48.456,17.27],zoom:11},
-  {id:24,cat:"mtb",name:"Sološnica \u2013 Horné Orešany \u2013 Losonec",dist:"76 km",elev:"~1 600 m",grade:"\u2014",maxGrade:"\u2014",diff:4,diffLabel:"Veľmi ťažká",type:"MTB / lesné cesty",desc:"Dlhý horský okruh cez stredné Malé Karpaty. Prepojenie Záhoria s Trnavskou stranou hôr. Divočina, ticho, nádhera.",start:[48.4652,17.231],end:[48.4652,17.231],waypoints:[[48.4652,17.231],[48.4833,17.2573],[48.4664,17.4403],[48.4652,17.231]],center:[48.4716,17.3357],zoom:11},
-  {id:25,cat:"mtb",name:"Plavecký Mikuláš \u2013 Cerová \u2013 Buková",dist:"86 km",elev:"~1 900 m",grade:"\u2014",maxGrade:"\u2014",diff:4,diffLabel:"Veľmi ťažká",type:"MTB / lesné cesty",desc:"Najnáročnejší okruh v bedekeri. Severné Malé Karpaty v celej kráse — rozľahlé bukové lesy, skalné veže, odľahlé sedlá. Výbava na celý deň nutná.",start:[48.5093,17.305],end:[48.5093,17.305],waypoints:[[48.5093,17.305],[48.52,17.35],[48.5418,17.3943],[48.5348,17.3619],[48.5093,17.305]],center:[48.5256,17.3497],zoom:12},
-  {id:26,cat:"mtb",name:"Kuchyňa \u2013 Modranská dolina \u2013 Čermák",dist:"50 km",elev:"~900 m",grade:"\u2014",maxGrade:"\u2014",diff:3,diffLabel:"Ťažká",type:"MTB / gravel",desc:"Z Kuchyne cez hrebeň do Modranskej doliny na Čermák. Zaujímavý prechod so zmenou krajiny — zo záhoráckych kopcov do vinohradníckej Modry.",start:[48.4065,17.1553],end:[48.4065,17.1553],waypoints:[[48.4065,17.1553],[48.4026,17.2348],[48.3834,17.2704],[48.3568,17.308],[48.3834,17.2704],[48.4065,17.1553]],center:[48.3817,17.2317],zoom:12},
-  {id:27,cat:"family",name:"Malacky \u2013 Studienka (borovicový les)",dist:"28\u201350 km",elev:"~70 m",grade:"\u2014",maxGrade:"\u2014",diff:1,diffLabel:"Ľahká",type:"Cestná (asfalt, minimum premávky)",desc:"Pokojná jazda borovicovými lesmi Záhoria. Prakticky rovina, tichá cesta, vôňa ihličia. Krátka verzia 28 km tam a späť, rozšírený okruh 50 km cez Závod, Veľké Leváre a Gajary. Ideálne pre rodiny s deťmi.",start:[48.4363,17.02],end:[48.5267,17.1367],waypoints:[[48.4363,17.02],[48.5267,17.1367],[48.544,17.0336],[48.5033,17.0022],[48.4685,16.9262],[48.4363,17.02]],center:[48.48,17.04],zoom:11},
-  {id:28,cat:"family",name:"Kuchyňa \u2013 Rohožník (rovinná trasa)",dist:"10.2 km",elev:"31 m",grade:"\u2014",maxGrade:"\u2014",diff:1,diffLabel:"Ľahká",type:"Cestná (asfalt)",desc:"Krátka a jednoduchá trasa medzi Kuchyňou a Rohožníkom takmer bez prevýšenia. Perfektná na poobedňajší výlet s deťmi alebo ako úvod do cyklistiky v regióne.",start:[48.4065,17.1553],end:[48.4585,17.1666],waypoints:[[48.4065,17.1553],[48.4585,17.1666]],center:[48.4325,17.161],zoom:13},
-  {id:29,cat:"family",name:"EuroVelo 13 \u2013 Záhorský úsek (Cesta železnej opony)",dist:"90 km",elev:"~0 m",grade:"\u2014",maxGrade:"\u2014",diff:1,diffLabel:"Ľahká",type:"Cestná / gravel (asfalt rôznej kvality)",desc:"Úsek medzinárodnej trasy EuroVelo 13 popri rieke Morava z Devína po Moravský Svätý Ján. Úplná rovina, historická trasa pozdĺž bývalej Železnej opony. Dá sa jazdiť po etapách — skvelé na viacdňový výlet.",start:[48.1731,16.9804],end:[48.5903,17.0014],waypoints:[[48.1731,16.9804],[48.3295,16.913],[48.4685,16.9262],[48.5903,17.0014]],center:[48.3817,16.952],zoom:10},
-  {id:30,cat:"family",name:"Rohožník \u2013 Sološnica \u2013 Pl. Mikuláš \u2013 Buková (vodná nádrž)",dist:"64 km",elev:"~400 m",grade:"\u2014",maxGrade:"\u2014",diff:2,diffLabel:"Stredná",type:"Cestná",desc:"Dlhší rodinný okruh po tichých cestách severného Záhoria s cieľom pri vodnej nádrži Buková. Možnosť kúpania v lete. Miernejšie terény, ale dlhšia vzdialenosť — vhodné pre aktívne rodiny alebo e-biky.",start:[48.4585,17.1666],end:[48.4585,17.1666],waypoints:[[48.4585,17.1666],[48.4652,17.231],[48.5093,17.305],[48.5348,17.3619],[48.5093,17.305],[48.4652,17.231],[48.4585,17.1666]],center:[48.4967,17.2643],zoom:11}
-];
+const ROUTES_API = 'https://script.google.com/macros/s/AKfycbyefX7uw7CJzR80AlrC1sHOQvLhKbcwCrw2dKgXn1Ent7iV_mKUaY8z6HWUjVhWaKGrkA/exec';
+const TF_KEY = '7c3d01d6ef5245b7a375d006a028615f';
+let routes = [];
 
-function init() {
+// backward compat: route may have cat (string) or cats (array)
+const getCats = r => r.cats || (r.cat ? [r.cat] : ['road']);
+
+async function init() {
+  const loading = document.getElementById('routes-loading');
+  loading.style.display = 'block';
+  try {
+    const resp = await fetch(ROUTES_API + '?action=getRoutes');
+    const json = await resp.json();
+    if (json.ok && Array.isArray(json.data)) {
+      routes = json.data;
+    } else {
+      throw new Error(json.error || 'Neznáma chyba');
+    }
+  } catch (e) {
+    loading.textContent = 'Chyba pri načítaní trás: ' + e.message;
+    return;
+  }
+  loading.style.display = 'none';
   renderRoutes();
 }
 
@@ -454,16 +445,19 @@ function diffBadgeClass(n) {
   return 'badge-expert';
 }
 
-// Category badge
-function catBadge(cat) {
+// Category badge(s) — accepts single cat string or array
+function catBadge(catOrCats) {
   const map = {
     road: ['Road Bike', 'badge-road'],
     gravel: ['Gravel / Trekking', 'badge-gravel'],
     mtb: ['MTB', 'badge-mtb'],
     family: ['Rodinná', 'badge-family']
   };
-  const [label, cls] = map[cat];
-  return `<span class="badge ${cls}">${label}</span>`;
+  const cats = Array.isArray(catOrCats) ? catOrCats : [catOrCats];
+  return cats.map(c => {
+    const [label, cls] = map[c] || [c, 'badge-road'];
+    return `<span class="badge ${cls}">${label}</span>`;
+  }).join('');
 }
 
 
@@ -476,7 +470,7 @@ const maps = {};
 routes.forEach(r => {
   const card = document.createElement('div');
   card.className = 'route-card';
-  card.dataset.cat = r.cat;
+  card.dataset.cats = getCats(r).join(',');
 
   let statsHtml = `
     <div class="stat"><div class="stat-label">Vzdialenosť</div><div class="stat-value">${r.dist}</div></div>
@@ -500,7 +494,7 @@ routes.forEach(r => {
         <span class="route-name">${r.name}</span>
       </div>
       <div class="route-badges">
-        ${catBadge(r.cat)}
+        ${catBadge(getCats(r))}
         <span class="badge ${diffBadgeClass(r.diff)}">${r.diffLabel}</span>
       </div>
     </div>
@@ -556,13 +550,13 @@ function initMap(r) {
   if (!el) return;
 
   const map = L.map(el, { scrollWheelZoom: false }).setView(r.center, r.zoom);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OSM',
-    maxZoom: 18
+  L.tileLayer(`https://tile.thunderforest.com/cycle/{z}/{x}/{y}@2x.png?apikey=${TF_KEY}`, {
+    attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    maxZoom: 18, tileSize: 512, zoomOffset: -1
   }).addTo(map);
 
   const isLoop = (r.start[0] === r.end[0] && r.start[1] === r.end[1]);
-  const color = catRouteColors[r.cat] || '#f97316';
+  const color = catRouteColors[getCats(r)[0]] || '#f97316';
 
   if (isLoop) {
     L.marker(r.start, { icon: startIcon }).addTo(map).bindPopup(`<b>${r.name}</b><br>Štart/Cieľ`);
@@ -601,15 +595,15 @@ setTimeout(checkVisibleMaps, 500);
 
 // Overview map
 const overviewMap = L.map('overview-map').setView([48.38, 17.08], 11);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 18
+L.tileLayer(`https://tile.thunderforest.com/cycle/{z}/{x}/{y}@2x.png?apikey=${TF_KEY}`, {
+  attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+  maxZoom: 18, tileSize: 512, zoomOffset: -1
 }).addTo(overviewMap);
 
 const catColors = { road: '#2563eb', gravel: '#b45309', mtb: '#16a34a', family: '#7c3aed' };
 
 routes.forEach(r => {
-  const color = catColors[r.cat];
+  const color = catColors[getCats(r)[0]] || '#f97316';
   const marker = L.circleMarker(r.center, {
     radius: 7, fillColor: color, color: 'white', weight: 2, fillOpacity: 0.9
   }).addTo(overviewMap);
@@ -639,7 +633,8 @@ document.querySelectorAll('.cat-btn').forEach(btn => {
     btn.classList.add('active');
     const cat = btn.dataset.cat;
     document.querySelectorAll('.route-card').forEach(card => {
-      if (cat === 'all' || card.dataset.cat === cat) {
+      const cardCats = (card.dataset.cats || '').split(',');
+      if (cat === 'all' || cardCats.includes(cat)) {
         card.classList.remove('hidden');
       } else {
         card.classList.add('hidden');
