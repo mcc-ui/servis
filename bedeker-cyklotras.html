@@ -630,30 +630,6 @@ function initMap(r) {
   maps[r.id] = map;
 }
 
-// Lazy init maps — IntersectionObserver works inside iframes too
-const mapObserver = new IntersectionObserver((entries) => {
-  entries.forEach(entry => {
-    if (!entry.isIntersecting) return;
-    const el = entry.target;
-    const id = parseInt(el.id.replace('map-', ''));
-    if (maps[id]) { mapObserver.unobserve(el); return; }
-    const route = routes.find(r => r.id === id);
-    if (route) {
-      initMap(route);
-      setTimeout(() => maps[route.id]?.invalidateSize(), 150);
-      mapObserver.unobserve(el);
-    }
-  });
-}, { rootMargin: '400px 0px' });
-
-function observeAllMaps() {
-  document.querySelectorAll('.route-map').forEach(el => {
-    if (!maps[parseInt(el.id.replace('map-', ''))]) mapObserver.observe(el);
-  });
-}
-
-window.addEventListener('resize', () => Object.values(maps).forEach(m => m?.invalidateSize()));
-
 // Overview map
 const overviewMap = L.map('overview-map').setView([48.38, 17.08], 11);
 L.tileLayer(`https://tile.thunderforest.com/cycle/{z}/{x}/{y}@2x.png?apikey=${TF_KEY}`, {
