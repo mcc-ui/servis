@@ -263,6 +263,11 @@ tr:hover td { background:#fafafa; }
       <span class="si-icon">🚲</span> Požičovňa
     </div>
 
+    <div class="sidebar-section">Obsah webu</div>
+    <div class="sidebar-item" id="si-routes" onclick="showPanel('routes',this)">
+      <span class="si-icon">🗺️</span> Cyklotrasy
+    </div>
+
     <div class="sidebar-section">Konfigurácia</div>
     <div class="sidebar-item" id="si-documents" onclick="showPanel('documents',this)">
       <span class="si-icon">📝</span> Dokumenty
@@ -379,6 +384,9 @@ tr:hover td { background:#fafafa; }
           </div>
         </div>
       </div>
+
+      <!-- ── PANEL: CYKLOTRASY ── -->
+      <div class="admin-panel" id="panel-routes"></div>
 
       <!-- ── PANEL: DOKUMENTY ── -->
       <div class="admin-panel" id="panel-documents">
@@ -556,6 +564,10 @@ tr:hover td { background:#fafafa; }
               <label>Požičovňa — Google Apps Script URL</label>
               <input type="url" id="cfg-rental-url" placeholder="https://script.google.com/macros/s/...">
             </div>
+            <div class="form-group">
+              <label>Cyklotrasy — Google Apps Script URL</label>
+              <input type="url" id="cfg-routes-url" placeholder="https://script.google.com/macros/s/...">
+            </div>
             <button class="btn btn-dark btn-sm" onclick="saveApiUrls()">Uložiť URL adresy a pripojiť</button>
           </div>
         </div>
@@ -681,6 +693,13 @@ const DEFAULT_RENTAL_URL = 'https://script.google.com/macros/s/AKfycbxKmc6coGPrU
 let SERVIS_URL = localStorage.getItem(KEY_SERVIS_URL) || DEFAULT_SERVIS_URL;
 let RENTAL_URL = localStorage.getItem(KEY_RENTAL_URL) || DEFAULT_RENTAL_URL;
 
+const KEY_ROUTES_URL = 'routesApiUrl';
+let ROUTES_URL = localStorage.getItem(KEY_ROUTES_URL) || '';
+let routesData = [];
+let routesEditingId = null;
+let routesDrawWaypoints = [];
+let routesPreviewMap = null;
+
 // ═══════════════════════════════════════════════════════════════════
 //  STATE
 // ═══════════════════════════════════════════════════════════════════
@@ -744,10 +763,18 @@ async function apiCall(url, action, data = {}) {
 async function loadAll() {
   const results = await Promise.allSettled([
     loadServis(),
-    loadRental()
+    loadRental(),
+    loadRoutes()
   ]);
   renderOverviewCalendar();
   renderStats();
+}
+
+async function loadRoutes() {
+  if (!ROUTES_URL) return;
+  try {
+    routesData = await apiCall(ROUTES_URL, 'getRoutes');
+  } catch(e) { console.warn('Routes API chyba:', e.message); }
 }
 
 async function loadServis() {
@@ -810,10 +837,11 @@ function showPanel(name, el) {
   document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   if (el) el.classList.add('active');
-  const titles = { overview:'Prehľad', servis:'Servis', rental:'Požičovňa', documents:'Dokumenty', emails:'E-maily', blacklist:'Blacklist', settings:'Nastavenia' };
+  const titles = { overview:'Prehľad', servis:'Servis', rental:'Požičovňa', routes:'Cyklotrasy', documents:'Dokumenty', emails:'E-maily', blacklist:'Blacklist', settings:'Nastavenia' };
   document.getElementById('topbar-title').textContent = titles[name] || '';
   if (name === 'servis')    { renderServisTable(); renderScCal(); }
   if (name === 'rental')    renderRentalTable();
+  if (name === 'routes')    { if (!routesData.length && ROUTES_URL) loadRoutes().then(renderRoutesPanel); else renderRoutesPanel(); }
   if (name === 'documents') renderDocumentsEditor();
   if (name === 'settings')  renderSettingsPanel();
   if (name === 'blacklist') { renderBlacklist('servis'); renderBlacklist('rental'); }
@@ -1737,6 +1765,7 @@ function renderSettingsPanel() {
   // API URLs
   document.getElementById('cfg-servis-url').value = SERVIS_URL;
   document.getElementById('cfg-rental-url').value = RENTAL_URL;
+  document.getElementById('cfg-routes-url').value = ROUTES_URL;
   // Servis config
   document.getElementById('scfg-admin-email').value = servisAdminEmail;
   document.getElementById('scfg-slots').value = servisSlotsPerDay;
@@ -1748,9 +1777,11 @@ function renderSettingsPanel() {
 function saveApiUrls() {
   const su = document.getElementById('cfg-servis-url').value.trim();
   const ru = document.getElementById('cfg-rental-url').value.trim();
-  SERVIS_URL = su; RENTAL_URL = ru;
+  const rou = document.getElementById('cfg-routes-url').value.trim();
+  SERVIS_URL = su; RENTAL_URL = ru; ROUTES_URL = rou;
   if (su) localStorage.setItem(KEY_SERVIS_URL, su);
   if (ru) localStorage.setItem(KEY_RENTAL_URL, ru);
+  if (rou) localStorage.setItem(KEY_ROUTES_URL, rou);
   loadAll().then(() => {
     renderSettingsPanel();
     alert('API URL adresy boli uložené a dáta načítané.');
@@ -1930,6 +1961,282 @@ async function init() {
     setTimeout(() => loadingEl.style.display = 'none', 400);
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+//  CYKLOTRASY
+// ═══════════════════════════════════════════════════════════════════
+
+const ROUTE_COLORS = { road:'#2563eb', gravel:'#b45309', mtb:'#16a34a', family:'#7c3aed' };
+const ROUTE_CAT_LABELS = { road:'Road', gravel:'Gravel', mtb:'MTB', family:'Rodinná' };
+const DIFF_LABELS = { 1:'Ľahká', 2:'Stredná', 3:'Ťažká', 4:'Veľmi ťažká' };
+
+async function saveAllRoutes() {
+  if (!ROUTES_URL) { alert('Nastavte Cyklotrasy API URL v Nastaveniach.'); return; }
+  try {
+    await apiCall(ROUTES_URL, 'saveRoutes', { routes: routesData });
+    alert('Cyklotrasy uložené (' + routesData.length + ' trás).');
+  } catch(e) { alert('Chyba pri ukladaní: ' + e.message); }
+}
+
+function renderRoutesPanel() {
+  const p = document.getElementById('panel-routes');
+  if (!p) return;
+
+  if (!ROUTES_URL) {
+    p.innerHTML = `<div class="panel-title">Cyklotrasy</div>
+      <div class="card" style="padding:2rem;text-align:center;color:var(--muted);">
+        <p style="font-size:1rem;margin-bottom:1rem;">⚙️ Najprv nastavte URL pre Cyklotrasy v <strong>Nastaveniach</strong>.</p>
+        <button class="btn btn-primary btn-sm" onclick="showPanel('settings',document.getElementById('si-settings'))">Prejsť na Nastavenia →</button>
+      </div>`;
+    return;
+  }
+
+  p.innerHTML = `
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:20px;flex-wrap:wrap;">
+      <div class="panel-title" style="margin:0;">Cyklotrasy <span style="font-size:.8rem;font-weight:400;color:var(--muted)">(${routesData.length})</span></div>
+      <button class="btn btn-primary btn-sm" onclick="openRoutesForm(null)">+ Pridať trasu</button>
+      <button class="btn btn-ghost btn-sm" onclick="saveAllRoutes()">💾 Uložiť zmeny na server</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadRoutes().then(renderRoutesPanel)">⟳ Načítať</button>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div class="table-wrap">
+        <table>
+          <thead><tr>
+            <th style="width:40px">#</th>
+            <th>Názov trasy</th>
+            <th style="width:90px">Kat.</th>
+            <th style="width:90px">Vzd.</th>
+            <th style="width:90px">Prevýš.</th>
+            <th style="width:120px">Obtiažnosť</th>
+            <th style="width:80px">Akcie</th>
+          </tr></thead>
+          <tbody>
+            ${routesData.map(r => `
+              <tr>
+                <td style="color:var(--muted);font-size:.8rem">${r.id}</td>
+                <td style="font-weight:600">${r.name}</td>
+                <td><span style="background:${ROUTE_COLORS[r.cat]||'#888'};color:white;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:700;">${ROUTE_CAT_LABELS[r.cat]||r.cat}</span></td>
+                <td style="font-size:.85rem">${r.dist||'—'}</td>
+                <td style="font-size:.85rem">${r.elev||'—'}</td>
+                <td style="font-size:.82rem">${'★'.repeat(r.diff||1)}${'☆'.repeat(4-(r.diff||1))} <span style="color:var(--muted)">${r.diffLabel||''}</span></td>
+                <td style="display:flex;gap:4px;">
+                  <button class="btn btn-ghost btn-sm" style="padding:3px 7px;" onclick="openRoutesForm(${r.id})">✏️</button>
+                  <button class="btn btn-ghost btn-sm" style="padding:3px 7px;color:#dc2626;" onclick="deleteRoute(${r.id})">🗑</button>
+                </td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="routes-form-area" style="margin-top:1.5rem;"></div>
+  `;
+}
+
+function openRoutesForm(id) {
+  routesEditingId = id;
+  routesPreviewMap = null;
+  const r = id ? routesData.find(x => x.id === id) : null;
+  const wp = r?.waypoints?.map(p => p[0]+', '+p[1]).join('\n') || '';
+
+  const fa = document.getElementById('routes-form-area');
+  fa.innerHTML = `
+    <div class="card">
+      <div style="font-size:1rem;font-weight:700;margin-bottom:1.25rem;color:var(--dark);">
+        ${r ? '✏️ Upraviť: ' + r.name : '+ Nová trasa'}
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Názov trasy *</label>
+          <input type="text" id="rf-name" value="${escHtml(r?.name||'')}" placeholder="Napr. Pezinská Baba z Perneka">
+        </div>
+        <div class="form-group">
+          <label>Kategória</label>
+          <select id="rf-cat">
+            <option value="road" ${r?.cat==='road'?'selected':''}>🚴 Road Bike</option>
+            <option value="gravel" ${r?.cat==='gravel'?'selected':''}>🪨 Gravel</option>
+            <option value="mtb" ${r?.cat==='mtb'?'selected':''}>🌲 MTB</option>
+            <option value="family" ${r?.cat==='family'?'selected':''}>👨‍👩‍👧 Rodinná</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Obtiažnosť</label>
+          <select id="rf-diff">
+            <option value="1" ${r?.diff==1?'selected':''}>1 – Ľahká</option>
+            <option value="2" ${r?.diff==2||!r?'selected':''}>2 – Stredná</option>
+            <option value="3" ${r?.diff==3?'selected':''}>3 – Ťažká</option>
+            <option value="4" ${r?.diff==4?'selected':''}>4 – Veľmi ťažká</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Vzdialenosť</label>
+          <input type="text" id="rf-dist" value="${escHtml(r?.dist||'')}" placeholder="napr. 6.4 km">
+        </div>
+        <div class="form-group">
+          <label>Prevýšenie</label>
+          <input type="text" id="rf-elev" value="${escHtml(r?.elev||'')}" placeholder="napr. 245 m">
+        </div>
+        <div class="form-group">
+          <label>Priem. sklon</label>
+          <input type="text" id="rf-grade" value="${escHtml(r?.grade||'—')}">
+        </div>
+        <div class="form-group">
+          <label>Max. sklon</label>
+          <input type="text" id="rf-maxgrade" value="${escHtml(r?.maxGrade||'—')}">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Typ povrchu</label>
+          <input type="text" id="rf-type" value="${escHtml(r?.type||'')}" placeholder="Cestná (asfalt)">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Popis</label>
+          <textarea id="rf-desc" rows="3" style="resize:vertical;">${escHtml(r?.desc||'')}</textarea>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Waypoints — jeden bod na riadok: <code>lat, lng</code></label>
+          <textarea id="rf-waypoints" rows="6" style="font-family:monospace;font-size:.8rem;resize:vertical;"
+            oninput="updateRoutesMapPreview()"
+            placeholder="48.3678, 17.1439&#10;48.3750, 17.1600&#10;48.3498, 17.1966">${wp}</textarea>
+          <span style="font-size:.72rem;color:var(--muted)">Skopírujte z Google Maps, Strava alebo Komoot. Alebo importujte GPX súbor nižšie.</span>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>GPX Import (zo Stravy / Komoot)</label>
+          <input type="file" accept=".gpx" onchange="handleRoutesGpx(this.files[0])">
+        </div>
+        <div style="grid-column:1/-1;">
+          <div id="rf-map" style="height:320px;border-radius:8px;border:1px solid var(--border);margin-top:4px;"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:.75rem;margin-top:1.25rem;">
+        <button class="btn btn-primary btn-sm" onclick="saveRouteForm()">💾 Uložiť trasu</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('routes-form-area').innerHTML=''">Zrušiť</button>
+      </div>
+    </div>
+  `;
+
+  fa.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  // Init Leaflet map
+  setTimeout(() => {
+    if (!window.L) return;
+    const el = document.getElementById('rf-map');
+    if (!el || routesPreviewMap) return;
+    routesPreviewMap = L.map(el, { scrollWheelZoom: false }).setView([48.41, 17.17], 11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 18 }).addTo(routesPreviewMap);
+    if (wp) updateRoutesMapPreview();
+  }, 80);
+}
+
+function updateRoutesMapPreview() {
+  if (!routesPreviewMap) return;
+  const wps = parseRoutesWaypoints(document.getElementById('rf-waypoints')?.value || '');
+  if (wps.length < 2) return;
+  routesPreviewMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) routesPreviewMap.removeLayer(l); });
+  const poly = L.polyline(wps, { color: '#f97316', weight: 4, opacity: 0.85, dashArray: '8,8' }).addTo(routesPreviewMap);
+  routesPreviewMap.fitBounds(poly.getBounds(), { padding: [20, 20] });
+  L.circleMarker(wps[0], { radius: 7, fillColor: '#16a34a', color: 'white', weight: 2, fillOpacity: 1 }).addTo(routesPreviewMap).bindPopup('Štart');
+  L.circleMarker(wps[wps.length - 1], { radius: 7, fillColor: '#dc2626', color: 'white', weight: 2, fillOpacity: 1 }).addTo(routesPreviewMap).bindPopup('Cieľ');
+}
+
+function parseRoutesWaypoints(text) {
+  return text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+    const p = l.split(/[,\s]+/);
+    const lat = parseFloat(p[0]), lng = parseFloat(p[1]);
+    return (!isNaN(lat) && !isNaN(lng)) ? [lat, lng] : null;
+  }).filter(Boolean);
+}
+
+function handleRoutesGpx(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const doc = new DOMParser().parseFromString(e.target.result, 'text/xml');
+    const pts = Array.from(doc.querySelectorAll('trkpt'));
+    if (!pts.length) { alert('GPX neobsahuje trackpoints (trkpt).'); return; }
+    const step = Math.max(1, Math.floor(pts.length / 300));
+    const lines = [];
+    for (let i = 0; i < pts.length; i += step) {
+      const lat = parseFloat(pts[i].getAttribute('lat'));
+      const lng = parseFloat(pts[i].getAttribute('lon'));
+      if (!isNaN(lat) && !isNaN(lng)) lines.push(lat + ', ' + lng);
+    }
+    document.getElementById('rf-waypoints').value = lines.join('\n');
+    updateRoutesMapPreview();
+    alert('GPX načítaný: ' + pts.length + ' bodov → ' + lines.length + ' waypoints.');
+  };
+  reader.readAsText(file);
+}
+
+function saveRouteForm() {
+  const name = document.getElementById('rf-name').value.trim();
+  if (!name) { alert('Zadajte názov trasy.'); return; }
+  const wps = parseRoutesWaypoints(document.getElementById('rf-waypoints').value);
+  if (wps.length < 2) { alert('Zadajte aspoň 2 platné GPS súradnice.'); return; }
+
+  const diff = parseInt(document.getElementById('rf-diff').value) || 2;
+  const lats = wps.map(p => p[0]), lngs = wps.map(p => p[1]);
+  const cLat = (Math.min(...lats) + Math.max(...lats)) / 2;
+  const cLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
+  const span = Math.max(Math.max(...lats) - Math.min(...lats), Math.max(...lngs) - Math.min(...lngs));
+  const zoom = span < 0.02 ? 14 : span < 0.05 ? 13 : span < 0.1 ? 12 : span < 0.3 ? 11 : span < 0.8 ? 10 : 9;
+
+  const route = {
+    id: routesEditingId || (Math.max(0, ...routesData.map(r => r.id)) + 1),
+    name,
+    cat:      document.getElementById('rf-cat').value,
+    diff,
+    diffLabel: DIFF_LABELS[diff],
+    dist:     document.getElementById('rf-dist').value.trim(),
+    elev:     document.getElementById('rf-elev').value.trim(),
+    grade:    document.getElementById('rf-grade').value.trim() || '—',
+    maxGrade: document.getElementById('rf-maxgrade').value.trim() || '—',
+    type:     document.getElementById('rf-type').value.trim(),
+    desc:     document.getElementById('rf-desc').value.trim(),
+    start:    wps[0],
+    end:      wps[wps.length - 1],
+    waypoints: wps,
+    center:   [parseFloat(cLat.toFixed(4)), parseFloat(cLng.toFixed(4))],
+    zoom
+  };
+
+  if (routesEditingId) {
+    const idx = routesData.findIndex(r => r.id === routesEditingId);
+    if (idx >= 0) routesData[idx] = route;
+  } else {
+    routesData.push(route);
+  }
+
+  routesEditingId = null;
+  routesPreviewMap = null;
+  document.getElementById('routes-form-area').innerHTML = '';
+  renderRoutesPanel();
+}
+
+function deleteRoute(id) {
+  const r = routesData.find(x => x.id === id);
+  if (!confirm('Zmazať trasu "' + (r?.name || id) + '"?\nTáto zmena bude aktívna po uložení na server.')) return;
+  routesData = routesData.filter(x => x.id !== id);
+  renderRoutesPanel();
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Načítanie Leaflet knižnice (ak ešte nie je)
+(function loadLeaflet() {
+  if (window.L) return;
+  const css = document.createElement('link');
+  css.rel = 'stylesheet';
+  css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+  document.head.appendChild(css);
+  const js = document.createElement('script');
+  js.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+  document.head.appendChild(js);
+})();
 
 init();
 </script>
