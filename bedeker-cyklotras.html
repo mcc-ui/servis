@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bedeker cyklotrás Záhoria a Malých Karpát | Jericho Bike</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+/* ── Oprava Leaflet v Shoptet / CMS prostredí ─────────────────────────────
+   Shoptet má globálne: img { max-width: 100% } čo rozbíja dlaždicové mapy.
+   Tieto pravidlá to prepíšu s !important. */
+.leaflet-container { font-size: 12px; }
+.leaflet-container img,
+.leaflet-tile,
+.leaflet-tile-container img,
+.leaflet-overlay-pane img,
+.leaflet-marker-pane img,
+.leaflet-shadow-pane img {
+  max-width: none !important;
+  max-height: none !important;
+  width: auto !important;
+  box-shadow: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+.leaflet-tile {
+  width: 256px !important;
+  height: 256px !important;
+}
+:root {
+  --orange: #f97316;
+  --orange-light: #fff7ed;
+  --orange-dark: #c2410c;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-500: #6b7280;
+  --gray-700: #374151;
+  --gray-900: #111827;
+  --green: #16a34a;
+  --blue: #2563eb;
+  --red: #dc2626;
+  --purple: #7c3aed;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Inter, Arial, sans-serif;
+  color: var(--gray-900);
+  line-height: 1.6;
+  background: var(--gray-50);
+}
+.container { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
+
+/* Header */
+header {
+  background: linear-gradient(135deg, var(--gray-900) 0%, #1e293b 100%);
+  color: white;
+  padding: 2rem 0;
+  position: relative;
+  overflow: hidden;
+}
+header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--orange);
+}
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+.logo {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.logo span { color: var(--orange); }
+.header-title {
+  flex: 1;
+  min-width: 280px;
+}
+.header-title h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.header-title p {
+  color: var(--gray-300);
+  font-size: 0.95rem;
+  margin-top: 0.3rem;
+}
+
+/* Intro */
+.intro {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+.intro h2 {
+  font-size: 1.2rem;
+  color: var(--orange-dark);
+  margin-bottom: 0.5rem;
+}
+.intro p { color: var(--gray-700); font-size: 0.95rem; }
+
+/* Overview map */
+.overview-map-section {
+  margin: 2rem 0;
+}
+.overview-map-section h2 {
+  font-size: 1.3rem;
+  margin-bottom: 1rem;
+  color: var(--gray-900);
+}
+#overview-map {
+  height: 450px;
+  border-radius: 12px;
+  border: 1px solid var(--gray-200);
+  z-index: 0;
+}
+
+/* Category tabs */
+.categories {
+  display: flex;
+  gap: 0.5rem;
+  margin: 2rem 0 1rem;
+  flex-wrap: wrap;
+  position: sticky;
+  top: 0;
+  background: var(--gray-50);
+  padding: 1rem 0;
+  z-index: 10;
+}
+.cat-btn {
+  padding: 0.6rem 1.2rem;
+  border: 2px solid var(--gray-200);
+  border-radius: 50px;
+  background: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--gray-700);
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.cat-btn:hover { border-color: var(--orange); color: var(--orange); }
+.cat-btn.active {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: white;
+}
+.cat-btn .icon { margin-right: 0.3rem; }
+
+/* Route cards */
+.routes-grid {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+.route-card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.route-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+.route-card.hidden { display: none; }
+.route-header {
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--gray-100);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.route-name {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.route-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--orange);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+.route-badges {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+.badge-road { background: #dbeafe; color: #1e40af; }
+.badge-gravel { background: #fef3c7; color: #92400e; }
+.badge-mtb { background: #dcfce7; color: #166534; }
+.badge-family { background: #f3e8ff; color: #6b21a8; }
+.badge-easy { background: #dcfce7; color: var(--green); }
+.badge-medium { background: #fef3c7; color: #b45309; }
+.badge-hard { background: #fee2e2; color: var(--red); }
+.badge-expert { background: #1e1b4b; color: #c4b5fd; }
+
+.route-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.route-info { padding: 1.25rem 1.5rem; }
+.route-desc {
+  color: var(--gray-700);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  line-height: 1.5;
+}
+.route-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.stat {
+  background: var(--gray-50);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+}
+.stat-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--gray-500);
+  font-weight: 600;
+}
+.stat-value {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.route-map {
+  height: 280px;
+  min-height: 280px;
+}
+.difficulty-stars {
+  color: var(--orange);
+  letter-spacing: 2px;
+}
+
+/* Footer */
+footer {
+  background: var(--gray-900);
+  color: var(--gray-300);
+  padding: 2.5rem 0;
+  margin-top: 3rem;
+}
+footer .logo { margin-bottom: 1rem; }
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 2rem;
+}
+.footer-col h3 {
+  color: white;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+.footer-col p, .footer-col a {
+  font-size: 0.85rem;
+  color: var(--gray-300);
+  text-decoration: none;
+  line-height: 1.8;
+}
+.footer-col a:hover { color: var(--orange); }
+.footer-bottom {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  font-size: 0.8rem;
+  color: var(--gray-500);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .route-body { grid-template-columns: 1fr; }
+  .route-map { height: 220px; }
+  .footer-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+  .header-title h1 { font-size: 1.3rem; }
+  #overview-map { height: 300px; }
+}
+
+/* Print */
+@media print {
+  header { background: white !important; color: black !important; }
+  header::after { background: var(--orange) !important; }
+  .logo span { color: var(--orange) !important; }
+  .categories { display: none; }
+  .route-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; }
+  .route-card.hidden { display: block !important; }
+  .route-map { height: 200px; }
+  footer { background: white !important; color: black !important; border-top: 2px solid var(--orange); }
+  .footer-col h3 { color: black !important; }
+  .footer-col p, .footer-col a { color: var(--gray-700) !important; }
+  #overview-map { height: 350px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container header-content">
+    <div class="logo">JERICHO<span>BIKE</span></div>
+    <div class="header-title">
+      <h1>Bedeker cyklotrás Záhoria a Malých Karpát</h1>
+      <p>30 najlepších trás pre cestný bicykel, gravel, MTB aj rodinu</p>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="intro">
+    <h2>Vitajte na Záhorí!</h2>
+    <p>
+      Záhorie a Malé Karpaty ponúkajú unikátnu kombináciu terénov — od rovných borovicových lesov cez gravelové cesty
+      až po náročné horské stúpania. Pripravili sme pre vás výber 30 najobľúbenejších trás, od ľahkých rodinných
+      výletov po celodenné endurance okruhy. Každá trasa obsahuje interaktívnu mapu, parametre a tipy.
+      Nech sa páči, sadnite na bicykel a objavujte!
+    </p>
+  </div>
+
+  <div class="overview-map-section">
+    <h2>Prehľadová mapa</h2>
+    <div id="overview-map"></div>
+  </div>
+
+  <div class="categories">
+    <button class="cat-btn active" data-cat="all"><span class="icon">&#9776;</span> Všetky trasy</button>
+    <button class="cat-btn" data-cat="road"><span class="icon">&#128739;</span> Road Bike</button>
+    <button class="cat-btn" data-cat="gravel"><span class="icon">&#9881;</span> Gravel / Trekking</button>
+    <button class="cat-btn" data-cat="mtb"><span class="icon">&#9968;</span> MTB</button>
+    <button class="cat-btn" data-cat="family"><span class="icon">&#128694;</span> Rodinné</button>
+  </div>
+
+  <div id="routes-loading" style="text-align:center;padding:48px;font-size:1.1rem;color:#64748b;display:none;">
+    Načítavam trasy&#8230;
+  </div>
+  <div class="routes-grid" id="routes-grid">
+  </div>
+
+</div>
+
+<footer>
+  <div class="container">
+    <div class="logo">JERICHO<span>BIKE</span></div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h3>Kontakt</h3>
+        <p>
+          Jericho Bike s.r.o.<br>
+          Záhorie, Slovensko<br>
+          info@jerichobike.sk
+        </p>
+      </div>
+      <div class="footer-col">
+        <h3>E-shop</h3>
+        <p>
+          <a href="https://www.jerichobike.sk">www.jerichobike.sk</a><br>
+          Bicykle CTM &amp; KELLYS<br>
+          Servis a poradenstvo
+        </p>
+      </div>
+      <div class="footer-col">
+        <h3>Zdroje dát</h3>
+        <p>
+          <a href="https://www.bikermania.sk">bikermania.sk</a><br>
+          <a href="https://cyklokopce.sk">cyklokopce.sk</a><br>
+          <a href="https://www.sportreport.sk">sportreport.sk</a><br>
+          <a href="https://www.openstreetmap.org">&copy; OpenStreetMap</a>
+        </p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2026 Jericho Bike s.r.o. | Bedeker cyklotrás Záhoria a Malých Karpát | Mapy: OpenStreetMap contributors
+    </div>
+  </div>
+</footer>
+
+<script>
+const ROUTES_API = 'https://script.google.com/macros/s/AKfycbyefX7uw7CJzR80AlrC1sHOQvLhKbcwCrw2dKgXn1Ent7iV_mKUaY8z6HWUjVhWaKGrkA/exec';
+const TF_KEY = '7c3d01d6ef5245b7a375d006a028615f';
+let routes = [];
+
+// backward compat: route may have cat (string) or cats (array)
+const getCats = r => r.cats || (r.cat ? [r.cat] : ['road']);
+
+async function init() {
+  const loading = document.getElementById('routes-loading');
+  loading.style.display = 'block';
+  try {
+    const resp = await fetch(ROUTES_API + '?action=getRoutes');
+    const json = await resp.json();
+    if (json.ok && Array.isArray(json.data)) {
+      routes = json.data;
+    } else {
+      throw new Error(json.error || 'Neznáma chyba');
+    }
+  } catch (e) {
+    loading.textContent = 'Chyba pri načítaní trás: ' + e.message;
+    return;
+  }
+  loading.style.display = 'none';
+  renderRoutes();
+}
+
+// Difficulty stars
+function diffStars(n) {
+  return '<span class="difficulty-stars">' + '&#9733;'.repeat(n) + '&#9734;'.repeat(4 - n) + '</span>';
+}
+
+// Difficulty badge class
+function diffBadgeClass(n) {
+  if (n <= 1) return 'badge-easy';
+  if (n <= 2) return 'badge-medium';
+  if (n <= 3) return 'badge-hard';
+  return 'badge-expert';
+}
+
+// Category badge(s) — accepts single cat string or array
+function catBadge(catOrCats) {
+  const map = {
+    road: ['Road Bike', 'badge-road'],
+    gravel: ['Gravel / Trekking', 'badge-gravel'],
+    mtb: ['MTB', 'badge-mtb'],
+    family: ['Rodinná', 'badge-family']
+  };
+  const cats = Array.isArray(catOrCats) ? catOrCats : [catOrCats];
+  return cats.map(c => {
+    const [label, cls] = map[c] || [c, 'badge-road'];
+    return `<span class="badge ${cls}">${label}</span>`;
+  }).join('');
+}
+
+
+// ── Render everything ──────────────────────────────────────────────────────
+function renderRoutes() {
+// Render route cards
+const grid = document.getElementById('routes-grid');
+const maps = {};
+
+routes.forEach(r => {
+  const card = document.createElement('div');
+  card.className = 'route-card';
+  card.dataset.cats = getCats(r).join(',');
+
+  let statsHtml = `
+    <div class="stat"><div class="stat-label">Vzdialenosť</div><div class="stat-value">${r.dist}</div></div>
+    <div class="stat"><div class="stat-label">Prevýšenie</div><div class="stat-value">${r.elev}</div></div>
+  `;
+  if (r.grade && r.grade !== '—') {
+    statsHtml += `<div class="stat"><div class="stat-label">Priem. sklon</div><div class="stat-value">${r.grade}</div></div>`;
+  }
+  if (r.maxGrade && r.maxGrade !== '—') {
+    statsHtml += `<div class="stat"><div class="stat-label">Max. sklon</div><div class="stat-value">${r.maxGrade}</div></div>`;
+  }
+  statsHtml += `
+    <div class="stat"><div class="stat-label">Povrch</div><div class="stat-value" style="font-size:0.8rem">${r.type}</div></div>
+    <div class="stat"><div class="stat-label">Obtiažnosť</div><div class="stat-value">${diffStars(r.diff)}</div></div>
+  `;
+
+  card.innerHTML = `
+    <div class="route-header">
+      <div>
+        <span class="route-number">${r.id}</span>
+        <span class="route-name">${r.name}</span>
+      </div>
+      <div class="route-badges">
+        ${catBadge(getCats(r))}
+        <span class="badge ${diffBadgeClass(r.diff)}">${r.diffLabel}</span>
+      </div>
+    </div>
+    <div class="route-body">
+      <div class="route-info">
+        <p class="route-desc">${r.desc}</p>
+        <div class="route-stats">${statsHtml}</div>
+      </div>
+      <div class="route-map" id="map-${r.id}"></div>
+    </div>
+  `;
+  grid.appendChild(card);
+});
+
+// Initialize maps (lazy — on scroll)
+const startIcon = L.divIcon({
+  html: '<div style="background:#16a34a;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);">&#9654;</div>',
+  iconSize: [24, 24], iconAnchor: [12, 12], className: ''
+});
+const endIcon = L.divIcon({
+  html: '<div style="background:#dc2626;color:white;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:bold;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,0.3);">&#9632;</div>',
+  iconSize: [24, 24], iconAnchor: [12, 12], className: ''
+});
+
+// Fetch route from OSRM and draw on map
+function fetchAndDrawRoute(map, points, color) {
+  // OSRM expects lng,lat (not lat,lng)
+  const coords = points.map(p => p[1] + ',' + p[0]).join(';');
+  const url = 'https://router.project-osrm.org/route/v1/cycling/' + coords + '?overview=full&geometries=geojson';
+
+  fetch(url)
+    .then(res => res.json())
+    .then(data => {
+      if (data.code === 'Ok' && data.routes && data.routes[0]) {
+        const geojson = data.routes[0].geometry;
+        const routeLine = L.geoJSON(geojson, {
+          style: { color: color, weight: 4, opacity: 0.85 }
+        }).addTo(map);
+        map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
+      }
+    })
+    .catch(() => {
+      // Fallback: draw straight lines between points
+      L.polyline(points, { color: color, weight: 3, dashArray: '8,8', opacity: 0.7 }).addTo(map);
+    });
+}
+
+const catRouteColors = { road: '#2563eb', gravel: '#b45309', mtb: '#16a34a', family: '#7c3aed' };
+
+function initMap(r) {
+  if (maps[r.id]) return;
+  const el = document.getElementById('map-' + r.id);
+  if (!el) return;
+
+  const map = L.map(el, { scrollWheelZoom: false }).setView(r.center, r.zoom);
+  L.tileLayer(`https://tile.thunderforest.com/cycle/{z}/{x}/{y}@2x.png?apikey=${TF_KEY}`, {
+    attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+    maxZoom: 18, tileSize: 512, zoomOffset: -1
+  }).addTo(map);
+
+  const isLoop = (r.start[0] === r.end[0] && r.start[1] === r.end[1]);
+  const color = catRouteColors[getCats(r)[0]] || '#f97316';
+
+  if (isLoop) {
+    L.marker(r.start, { icon: startIcon }).addTo(map).bindPopup(`<b>${r.name}</b><br>Štart/Cieľ`);
+  } else {
+    L.marker(r.start, { icon: startIcon }).addTo(map).bindPopup(`<b>Štart:</b> ${r.name}`);
+    L.marker(r.end, { icon: endIcon }).addTo(map).bindPopup(`<b>Cieľ:</b> ${r.name}`);
+  }
+
+  // Draw route via OSRM
+  const points = r.waypoints || [r.start, r.end];
+  fetchAndDrawRoute(map, points, color);
+
+  maps[r.id] = map;
+}
+
+// Lazy init maps on scroll
+function checkVisibleMaps() {
+  document.querySelectorAll('.route-map').forEach(el => {
+    const id = parseInt(el.id.replace('map-', ''));
+    if (maps[id]) return; // already initialized
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight + 300 && rect.bottom > -300) {
+      const route = routes.find(r => r.id === id);
+      if (route) {
+        initMap(route);
+        setTimeout(() => maps[route.id]?.invalidateSize(), 100);
+      }
+    }
+  });
+}
+
+// Run on scroll, resize, and initially after a short delay
+window.addEventListener('scroll', checkVisibleMaps, { passive: true });
+window.addEventListener('resize', checkVisibleMaps);
+setTimeout(checkVisibleMaps, 500);
+
+// Overview map
+const overviewMap = L.map('overview-map').setView([48.38, 17.08], 11);
+L.tileLayer(`https://tile.thunderforest.com/cycle/{z}/{x}/{y}@2x.png?apikey=${TF_KEY}`, {
+  attribution: '&copy; <a href="https://www.thunderforest.com/">Thunderforest</a>, &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+  maxZoom: 18, tileSize: 512, zoomOffset: -1
+}).addTo(overviewMap);
+
+const catColors = { road: '#2563eb', gravel: '#b45309', mtb: '#16a34a', family: '#7c3aed' };
+
+routes.forEach(r => {
+  const color = catColors[getCats(r)[0]] || '#f97316';
+  const marker = L.circleMarker(r.center, {
+    radius: 7, fillColor: color, color: 'white', weight: 2, fillOpacity: 0.9
+  }).addTo(overviewMap);
+  marker.bindPopup(`<b>${r.id}. ${r.name}</b><br>${r.dist} | ${r.elev}<br><em>${r.diffLabel}</em>`);
+});
+
+// Legend
+const legend = L.control({ position: 'bottomright' });
+legend.onAdd = function() {
+  const div = L.DomUtil.create('div', '');
+  div.style.cssText = 'background:white;padding:8px 12px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);font-size:12px;line-height:1.8;';
+  div.innerHTML = `
+    <b>Legenda</b><br>
+    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#2563eb;margin-right:4px;vertical-align:middle;"></span> Road Bike<br>
+    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#b45309;margin-right:4px;vertical-align:middle;"></span> Gravel<br>
+    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#16a34a;margin-right:4px;vertical-align:middle;"></span> MTB<br>
+    <span style="display:inline-block;width:12px;height:12px;border-radius:50%;background:#7c3aed;margin-right:4px;vertical-align:middle;"></span> Rodinné
+  `;
+  return div;
+};
+legend.addTo(overviewMap);
+
+// Category filter
+document.querySelectorAll('.cat-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const cat = btn.dataset.cat;
+    document.querySelectorAll('.route-card').forEach(card => {
+      const cardCats = (card.dataset.cats || '').split(',');
+      if (cat === 'all' || cardCats.includes(cat)) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+    // Refresh visible maps
+    setTimeout(() => {
+      Object.values(maps).forEach(m => m.invalidateSize());
+    }, 100);
+  });
+});
+}
+
+init();
+
+</script>
+
+</body>
+</html>
