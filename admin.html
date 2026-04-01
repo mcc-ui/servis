@@ -699,6 +699,9 @@ let routesData = [];
 let routesEditingId = null;
 let routesDrawWaypoints = [];
 let routesPreviewMap = null;
+let routesDrawMap = null;
+let routesDrawPolyline = null;
+let routesGpxMap = null;
 
 // ═══════════════════════════════════════════════════════════════════
 //  STATE
@@ -2037,15 +2040,66 @@ function renderRoutesPanel() {
 function openRoutesForm(id) {
   routesEditingId = id;
   routesPreviewMap = null;
+  routesDrawMap = null;
+  routesDrawPolyline = null;
+  routesGpxMap = null;
+  routesDrawWaypoints = [];
+  window._routesGpxWaypoints = null;
+
   const r = id ? routesData.find(x => x.id === id) : null;
   const wp = r?.waypoints?.map(p => p[0]+', '+p[1]).join('\n') || '';
 
   const fa = document.getElementById('routes-form-area');
   fa.innerHTML = `
     <div class="card">
-      <div style="font-size:1rem;font-weight:700;margin-bottom:1.25rem;color:var(--dark);">
-        ${r ? '✏️ Upraviť: ' + r.name : '+ Nová trasa'}
+      <div style="font-size:1rem;font-weight:700;margin-bottom:1rem;color:var(--dark);">
+        ${r ? '✏️ Upraviť: ' + escHtml(r.name) : '+ Nová trasa'}
       </div>
+
+      <div style="display:flex;border-bottom:2px solid var(--border);margin-bottom:1.25rem;gap:0;">
+        <button class="tab-btn active" id="rtab-gpx" onclick="routesSwitchTab('gpx',this)">📥 GPX Import</button>
+        <button class="tab-btn" id="rtab-draw" onclick="routesSwitchTab('draw',this)">🖊️ Kresliť na mape</button>
+        <button class="tab-btn" id="rtab-manual" onclick="routesSwitchTab('manual',this)">📝 Ručný formulár</button>
+      </div>
+
+      <!-- GPX tab -->
+      <div id="rtc-gpx">
+        <label for="rf-gpx-input" style="display:flex;align-items:center;gap:.75rem;cursor:pointer;border:2px dashed var(--border);border-radius:8px;padding:1rem 1.25rem;margin-bottom:.75rem;transition:border-color .15s;"
+               onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+          <input type="file" id="rf-gpx-input" accept=".gpx" style="display:none;" onchange="handleRoutesGpx(this.files[0])">
+          <span style="font-size:1.8rem;">📂</span>
+          <div><strong>Kliknite pre výber</strong> alebo pretiahnite .gpx súbor<br>
+          <span style="font-size:.75rem;color:var(--muted)">Exportujte z Strava → trasa → Export GPX</span></div>
+        </label>
+        <div id="rf-gpx-info" style="font-size:.82rem;color:var(--muted);margin-bottom:.5rem;"></div>
+        <div id="rf-map-gpx" style="height:260px;border-radius:8px;border:1px solid var(--border);display:none;"></div>
+      </div>
+
+      <!-- Draw tab -->
+      <div id="rtc-draw" style="display:none;">
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.5rem;">
+          <button class="btn btn-ghost btn-sm" onclick="routesUndoPoint()">↩ Späť</button>
+          <button class="btn btn-ghost btn-sm" onclick="routesDrawClear()">🗑 Vymazať</button>
+          <button class="btn btn-ghost btn-sm" onclick="routesSnapToRoad()">🛣 OSRM preview</button>
+          <span id="rf-wp-count" style="font-size:.8rem;color:var(--muted);margin-left:.5rem;">0 bodov</span>
+        </div>
+        <div id="rf-map-draw" style="height:320px;border-radius:8px;border:1px solid var(--border);"></div>
+        <p style="font-size:.73rem;color:var(--muted);margin-top:.4rem;">Kliknite na mapu pre pridanie bodov. OSRM preview vypočíta reálnu cestu po chodníkoch.</p>
+      </div>
+
+      <!-- Manual tab -->
+      <div id="rtc-manual" style="display:none;">
+        <div class="form-group">
+          <label>Waypoints — jeden bod na riadok: <code>lat, lng</code></label>
+          <textarea id="rf-waypoints" rows="6" style="font-family:monospace;font-size:.8rem;resize:vertical;"
+            oninput="updateRoutesMapPreview()"
+            placeholder="48.3678, 17.1439&#10;48.3750, 17.1600&#10;48.3498, 17.1966">${escHtml(wp)}</textarea>
+          <span style="font-size:.72rem;color:var(--muted)">Skopírujte z Google Maps, Strava alebo Komoot.</span>
+        </div>
+        <div id="rf-map-manual" style="height:260px;border-radius:8px;border:1px solid var(--border);margin-top:.5rem;"></div>
+      </div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:1.25rem 0;">
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
         <div class="form-group" style="grid-column:1/-1;">
@@ -2094,44 +2148,125 @@ function openRoutesForm(id) {
           <label>Popis</label>
           <textarea id="rf-desc" rows="3" style="resize:vertical;">${escHtml(r?.desc||'')}</textarea>
         </div>
-        <div class="form-group" style="grid-column:1/-1;">
-          <label>Waypoints — jeden bod na riadok: <code>lat, lng</code></label>
-          <textarea id="rf-waypoints" rows="6" style="font-family:monospace;font-size:.8rem;resize:vertical;"
-            oninput="updateRoutesMapPreview()"
-            placeholder="48.3678, 17.1439&#10;48.3750, 17.1600&#10;48.3498, 17.1966">${wp}</textarea>
-          <span style="font-size:.72rem;color:var(--muted)">Skopírujte z Google Maps, Strava alebo Komoot. Alebo importujte GPX súbor nižšie.</span>
-        </div>
-        <div class="form-group" style="grid-column:1/-1;">
-          <label>GPX Import (zo Stravy / Komoot)</label>
-          <input type="file" accept=".gpx" onchange="handleRoutesGpx(this.files[0])">
-        </div>
-        <div style="grid-column:1/-1;">
-          <div id="rf-map" style="height:320px;border-radius:8px;border:1px solid var(--border);margin-top:4px;"></div>
-        </div>
       </div>
 
       <div style="display:flex;gap:.75rem;margin-top:1.25rem;">
         <button class="btn btn-primary btn-sm" onclick="saveRouteForm()">💾 Uložiť trasu</button>
-        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('routes-form-area').innerHTML=''">Zrušiť</button>
+        <button class="btn btn-ghost btn-sm" onclick="document.getElementById('routes-form-area').innerHTML='';routesDrawMap=null;routesPreviewMap=null;routesGpxMap=null;">Zrušiť</button>
       </div>
     </div>
   `;
 
   fa.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-  // Init Leaflet map
+  // Pre-load draw waypoints if editing
+  if (r?.waypoints?.length) {
+    routesDrawWaypoints = r.waypoints.map(p => ({ lat: p[0], lng: p[1] }));
+  }
+
+  // If editing switch to manual tab (has existing waypoints)
+  if (r) {
+    setTimeout(() => routesSwitchTab('manual', document.getElementById('rtab-manual')), 50);
+  }
+}
+
+function routesSwitchTab(name, btn) {
+  ['gpx','draw','manual'].forEach(t => {
+    const b = document.getElementById('rtab-' + t);
+    const c = document.getElementById('rtc-' + t);
+    if (b) b.classList.toggle('active', t === name);
+    if (c) c.style.display = t === name ? '' : 'none';
+  });
   setTimeout(() => {
     if (!window.L) return;
-    const el = document.getElementById('rf-map');
-    if (!el || routesPreviewMap) return;
-    routesPreviewMap = L.map(el, { scrollWheelZoom: false }).setView([48.41, 17.17], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 18 }).addTo(routesPreviewMap);
-    if (wp) updateRoutesMapPreview();
-  }, 80);
+    if (name === 'draw') {
+      initRoutesDrawMap();
+      routesDrawMap && routesDrawMap.invalidateSize();
+    } else if (name === 'manual') {
+      initRoutesManualMap();
+      routesPreviewMap && routesPreviewMap.invalidateSize();
+    } else if (name === 'gpx' && routesGpxMap) {
+      routesGpxMap.invalidateSize();
+    }
+  }, 60);
+}
+
+function initRoutesDrawMap() {
+  const el = document.getElementById('rf-map-draw');
+  if (!el || routesDrawMap) return;
+  routesDrawMap = L.map(el, { scrollWheelZoom: true }).setView([48.41, 17.17], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 18 }).addTo(routesDrawMap);
+  if (routesDrawWaypoints.length) {
+    redrawRoutesDrawMap();
+    const poly = L.polyline(routesDrawWaypoints.map(p => [p.lat, p.lng]));
+    routesDrawMap.fitBounds(poly.getBounds(), { padding: [20, 20] });
+  }
+  routesDrawMap.on('click', e => {
+    routesDrawWaypoints.push(e.latlng);
+    redrawRoutesDrawMap();
+    const c = document.getElementById('rf-wp-count');
+    if (c) c.textContent = routesDrawWaypoints.length + ' bodov';
+  });
+}
+
+function redrawRoutesDrawMap() {
+  if (!routesDrawMap) return;
+  routesDrawMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) routesDrawMap.removeLayer(l); });
+  if (!routesDrawWaypoints.length) return;
+  routesDrawWaypoints.forEach((pt, i) => {
+    const color = i === 0 ? '#16a34a' : i === routesDrawWaypoints.length-1 ? '#dc2626' : '#f97316';
+    L.circleMarker(pt, { radius: 6, fillColor: color, color: 'white', weight: 2, fillOpacity: 1 }).addTo(routesDrawMap);
+  });
+  if (routesDrawPolyline) { try { routesDrawMap.removeLayer(routesDrawPolyline); } catch(e){} }
+  routesDrawPolyline = L.polyline(routesDrawWaypoints, { color: '#94a3b8', weight: 3, dashArray: '6,6', opacity: 0.7 }).addTo(routesDrawMap);
+}
+
+function routesUndoPoint() {
+  if (routesDrawWaypoints.length) {
+    routesDrawWaypoints.pop();
+    redrawRoutesDrawMap();
+    const c = document.getElementById('rf-wp-count');
+    if (c) c.textContent = routesDrawWaypoints.length + ' bodov';
+  }
+}
+
+function routesDrawClear() {
+  routesDrawWaypoints = [];
+  redrawRoutesDrawMap();
+  const c = document.getElementById('rf-wp-count');
+  if (c) c.textContent = '0 bodov';
+}
+
+function routesSnapToRoad() {
+  if (routesDrawWaypoints.length < 2) { alert('Pridajte aspoň 2 body pre OSRM preview.'); return; }
+  const coords = routesDrawWaypoints.map(p => p.lng + ',' + p.lat).join(';');
+  fetch('https://router.project-osrm.org/route/v1/cycling/' + coords + '?overview=full&geometries=geojson')
+    .then(r => r.json())
+    .then(data => {
+      if (data.code === 'Ok' && data.routes?.[0]) {
+        routesDrawMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) routesDrawMap.removeLayer(l); });
+        const line = L.geoJSON(data.routes[0].geometry, { style: { color: '#f97316', weight: 4, opacity: 0.9 } }).addTo(routesDrawMap);
+        routesDrawMap.fitBounds(line.getBounds(), { padding: [20, 20] });
+        routesDrawWaypoints.forEach((pt, i) => {
+          const color = i === 0 ? '#16a34a' : i === routesDrawWaypoints.length-1 ? '#dc2626' : '#f97316';
+          L.circleMarker(pt, { radius: 6, fillColor: color, color: 'white', weight: 2, fillOpacity: 1 }).addTo(routesDrawMap);
+        });
+      } else { alert('OSRM nevrátil výsledok.'); }
+    })
+    .catch(() => alert('Chyba spojenia s OSRM.'));
+}
+
+function initRoutesManualMap() {
+  const el = document.getElementById('rf-map-manual');
+  if (!el || routesPreviewMap) return;
+  routesPreviewMap = L.map(el, { scrollWheelZoom: false }).setView([48.41, 17.17], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 18 }).addTo(routesPreviewMap);
+  const wp = document.getElementById('rf-waypoints')?.value;
+  if (wp) updateRoutesMapPreview();
 }
 
 function updateRoutesMapPreview() {
-  if (!routesPreviewMap) return;
+  if (!routesPreviewMap) { initRoutesManualMap(); return; }
   const wps = parseRoutesWaypoints(document.getElementById('rf-waypoints')?.value || '');
   if (wps.length < 2) return;
   routesPreviewMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) routesPreviewMap.removeLayer(l); });
@@ -2157,15 +2292,32 @@ function handleRoutesGpx(file) {
     const pts = Array.from(doc.querySelectorAll('trkpt'));
     if (!pts.length) { alert('GPX neobsahuje trackpoints (trkpt).'); return; }
     const step = Math.max(1, Math.floor(pts.length / 300));
-    const lines = [];
+    const wps = [];
     for (let i = 0; i < pts.length; i += step) {
       const lat = parseFloat(pts[i].getAttribute('lat'));
       const lng = parseFloat(pts[i].getAttribute('lon'));
-      if (!isNaN(lat) && !isNaN(lng)) lines.push(lat + ', ' + lng);
+      if (!isNaN(lat) && !isNaN(lng)) wps.push([lat, lng]);
     }
-    document.getElementById('rf-waypoints').value = lines.join('\n');
-    updateRoutesMapPreview();
-    alert('GPX načítaný: ' + pts.length + ' bodov → ' + lines.length + ' waypoints.');
+    window._routesGpxWaypoints = wps;
+    const info = document.getElementById('rf-gpx-info');
+    if (info) info.textContent = `✅ ${file.name} — ${pts.length} bodov → ${wps.length} waypoints`;
+    // Show map
+    const mapEl = document.getElementById('rf-map-gpx');
+    if (mapEl && window.L) {
+      mapEl.style.display = '';
+      setTimeout(() => {
+        if (!routesGpxMap) {
+          routesGpxMap = L.map(mapEl, { scrollWheelZoom: false }).setView([48.41, 17.17], 11);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OSM', maxZoom: 18 }).addTo(routesGpxMap);
+        }
+        routesGpxMap.eachLayer(l => { if (!(l instanceof L.TileLayer)) routesGpxMap.removeLayer(l); });
+        const poly = L.polyline(wps, { color: '#f97316', weight: 4, opacity: 0.85 }).addTo(routesGpxMap);
+        routesGpxMap.fitBounds(poly.getBounds(), { padding: [20, 20] });
+        L.circleMarker(wps[0], { radius: 7, fillColor: '#16a34a', color: 'white', weight: 2, fillOpacity: 1 }).addTo(routesGpxMap).bindPopup('Štart');
+        L.circleMarker(wps[wps.length-1], { radius: 7, fillColor: '#dc2626', color: 'white', weight: 2, fillOpacity: 1 }).addTo(routesGpxMap).bindPopup('Cieľ');
+        routesGpxMap.invalidateSize();
+      }, 80);
+    }
   };
   reader.readAsText(file);
 }
@@ -2173,8 +2325,21 @@ function handleRoutesGpx(file) {
 function saveRouteForm() {
   const name = document.getElementById('rf-name').value.trim();
   if (!name) { alert('Zadajte názov trasy.'); return; }
-  const wps = parseRoutesWaypoints(document.getElementById('rf-waypoints').value);
-  if (wps.length < 2) { alert('Zadajte aspoň 2 platné GPS súradnice.'); return; }
+
+  let wps = [];
+  const activeTab = document.getElementById('rtc-draw')?.style.display !== 'none' ? 'draw'
+                  : document.getElementById('rtc-gpx')?.style.display !== 'none' ? 'gpx' : 'manual';
+
+  if (activeTab === 'gpx') {
+    wps = window._routesGpxWaypoints || [];
+    if (!wps.length) { alert('Najprv importujte GPX súbor.'); return; }
+  } else if (activeTab === 'draw') {
+    wps = routesDrawWaypoints.map(p => [p.lat, p.lng]);
+    if (wps.length < 2) { alert('Pridajte aspoň 2 body na mape.'); return; }
+  } else {
+    wps = parseRoutesWaypoints(document.getElementById('rf-waypoints').value);
+    if (wps.length < 2) { alert('Zadajte aspoň 2 platné GPS súradnice.'); return; }
+  }
 
   const diff = parseInt(document.getElementById('rf-diff').value) || 2;
   const lats = wps.map(p => p[0]), lngs = wps.map(p => p[1]);
@@ -2211,6 +2376,8 @@ function saveRouteForm() {
 
   routesEditingId = null;
   routesPreviewMap = null;
+  routesDrawMap = null;
+  routesGpxMap = null;
   document.getElementById('routes-form-area').innerHTML = '';
   renderRoutesPanel();
 }
