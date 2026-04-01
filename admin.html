@@ -1976,6 +1976,7 @@ async function init() {
 
 const ROUTE_COLORS = { road:'#2563eb', gravel:'#b45309', mtb:'#16a34a', family:'#7c3aed' };
 const ROUTE_CAT_LABELS = { road:'Road', gravel:'Gravel', mtb:'MTB', family:'Rodinná' };
+const getRouteCats = r => r.cats || (r.cat ? [r.cat] : ['road']);
 const DIFF_LABELS = { 1:'Ľahká', 2:'Stredná', 3:'Ťažká', 4:'Veľmi ťažká' };
 
 async function saveAllRoutes() {
@@ -2029,7 +2030,7 @@ function renderRoutesPanel() {
               <tr>
                 <td style="color:var(--muted);font-size:.8rem">${r.id}</td>
                 <td style="font-weight:600">${r.name}</td>
-                <td><span style="background:${ROUTE_COLORS[r.cat]||'#888'};color:white;padding:2px 8px;border-radius:99px;font-size:.72rem;font-weight:700;">${ROUTE_CAT_LABELS[r.cat]||r.cat}</span></td>
+                <td>${getRouteCats(r).map(c=>`<span style="background:${ROUTE_COLORS[c]||'#888'};color:white;padding:2px 6px;border-radius:99px;font-size:.72rem;font-weight:700;margin-right:2px;">${ROUTE_CAT_LABELS[c]||c}</span>`).join('')}</td>
                 <td style="font-size:.85rem">${r.dist||'—'}</td>
                 <td style="font-size:.85rem">${r.elev||'—'}</td>
                 <td style="font-size:.82rem">${'★'.repeat(r.diff||1)}${'☆'.repeat(4-(r.diff||1))} <span style="color:var(--muted)">${r.diffLabel||''}</span></td>
@@ -2121,13 +2122,13 @@ function openRoutesForm(id) {
           <input type="text" id="rf-name" value="${escHtml(r?.name||'')}" placeholder="Napr. Pezinská Baba z Perneka">
         </div>
         <div class="form-group">
-          <label>Kategória</label>
-          <select id="rf-cat">
-            <option value="road" ${r?.cat==='road'?'selected':''}>🚴 Road Bike</option>
-            <option value="gravel" ${r?.cat==='gravel'?'selected':''}>🪨 Gravel</option>
-            <option value="mtb" ${r?.cat==='mtb'?'selected':''}>🌲 MTB</option>
-            <option value="family" ${r?.cat==='family'?'selected':''}>👨‍👩‍👧 Rodinná</option>
-          </select>
+          <label>Kategória (môže byť viac)</label>
+          <div style="display:flex;gap:12px;flex-wrap:wrap;padding:6px 0;">
+            ${[['road','🚴 Road Bike'],['gravel','🪨 Gravel'],['mtb','🌲 MTB'],['family','👨‍👩‍👧 Rodinná']].map(([val,lbl])=>{
+              const checked = (r ? getRouteCats(r) : ['road']).includes(val) ? 'checked' : '';
+              return `<label style="display:flex;align-items:center;gap:5px;cursor:pointer;"><input type="checkbox" class="rf-cat-cb" value="${val}" ${checked}> ${lbl}</label>`;
+            }).join('')}
+          </div>
         </div>
         <div class="form-group">
           <label>Obtiažnosť</label>
@@ -2453,7 +2454,7 @@ function saveRouteForm() {
   const route = {
     id: routesEditingId || (Math.max(0, ...routesData.map(r => r.id)) + 1),
     name,
-    cat:      document.getElementById('rf-cat').value,
+    cats:     [...document.querySelectorAll('.rf-cat-cb:checked')].map(cb => cb.value),
     diff,
     diffLabel: DIFF_LABELS[diff],
     dist:     document.getElementById('rf-dist').value.trim(),
