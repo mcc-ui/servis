@@ -166,6 +166,28 @@ tr:hover td { background:#fafafa; }
 .modal-close:hover { color:var(--dark); }
 .modal-title { font-size:1.05rem;font-weight:700;color:var(--dark);margin-bottom:20px; }
 
+/* ── SMS ── */
+.sms-badge { display:inline-flex;align-items:center;gap:3px;font-size:.72rem;padding:2px 7px;border-radius:999px;font-weight:600; }
+.sms-badge.sent { background:#dcfce7;color:#166534; }
+.sms-badge.scheduled { background:#fef9c3;color:#854d0e; }
+.sms-check { width:16px;height:16px;cursor:pointer;accent-color:var(--accent); }
+.sms-toolbar { display:flex;align-items:center;gap:10px;padding:8px 0; }
+.sms-toolbar .sms-count { font-size:.82rem;color:var(--muted); }
+.sms-recipients { max-height:340px;overflow-y:auto;margin:10px 0; }
+.sms-recip-row { display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:.84rem; }
+.sms-recip-row:last-child { border-bottom:none; }
+.sms-recip-info { flex:1;min-width:0; }
+.sms-recip-name { font-weight:600; }
+.sms-recip-phone { color:var(--muted);font-size:.78rem; }
+.sms-recip-date { font-size:.78rem;color:var(--muted); }
+.sms-preview { background:var(--bg);border-radius:var(--radius);padding:12px;font-size:.84rem;margin:12px 0;border:1px solid var(--border); }
+.sms-mode-toggle { display:flex;gap:0;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:12px; }
+.sms-mode-toggle button { flex:1;padding:7px 12px;border:none;background:var(--card);font-family:inherit;font-size:.8rem;cursor:pointer;font-weight:500; }
+.sms-mode-toggle button.active { background:var(--accent);color:#fff;font-weight:600; }
+.sms-result { margin-top:12px;padding:10px;border-radius:var(--radius);font-size:.84rem; }
+.sms-result.ok { background:#dcfce7;color:#166534; }
+.sms-result.err { background:#fee2e2;color:#991b1b; }
+
 /* ── SETTINGS ── */
 .settings-section { margin-bottom:28px; }
 .settings-section-title { font-size:.9rem;font-weight:700;color:var(--dark);margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--accent);display:flex;align-items:center;gap:7px; }
@@ -334,13 +356,19 @@ tr:hover td { background:#fafafa; }
 
         <!-- Tab: rezervácie -->
         <div class="tab-pane active" id="stab-pane-reservations">
-          <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
-            <button class="btn btn-primary btn-sm" onclick="openServisModal(null)">+ Pridať</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div class="sms-toolbar" id="sms-toolbar" style="display:none">
+              <button class="btn btn-dark btn-sm" id="btn-sms-bulk" onclick="openSmsModal()">📱 Odoslať SMS</button>
+              <span class="sms-count" id="sms-selected-count"></span>
+            </div>
+            <div style="margin-left:auto">
+              <button class="btn btn-primary btn-sm" onclick="openServisModal(null)">+ Pridať</button>
+            </div>
           </div>
           <div class="card">
             <div class="table-wrap">
               <table>
-                <thead><tr><th>#</th><th>Dátum</th><th>Zákazník</th><th>Kontakt</th><th>Bicykel</th><th>Popis</th><th></th></tr></thead>
+                <thead><tr><th style="width:32px"><input type="checkbox" class="sms-check" id="sms-check-all" onchange="toggleAllSmsChecks(this.checked)"></th><th>#</th><th>Dátum</th><th>Zákazník</th><th>Kontakt</th><th>Bicykel</th><th>Popis</th><th>SMS</th><th></th></tr></thead>
                 <tbody id="servis-tbody"></tbody>
               </table>
             </div>
@@ -598,6 +626,27 @@ tr:hover td { background:#fafafa; }
           </div>
         </div>
 
+        <!-- SMS BulkGate -->
+        <div class="settings-section">
+          <div class="settings-section-title">📱 SMS pripomienky (BulkGate)</div>
+          <div class="card">
+            <div class="form-row">
+              <div class="form-group"><label>Application ID</label><input type="text" id="cfg-bulkgate-id" placeholder="napr. 37374"></div>
+              <div class="form-group"><label>Application Token</label><input type="text" id="cfg-bulkgate-token" placeholder="Váš BulkGate token"></div>
+            </div>
+            <div class="form-group">
+              <label>Šablóna SMS správy</label>
+              <textarea id="cfg-sms-template" rows="3" placeholder="Použite {meno}, {priezvisko}, {datum}"></textarea>
+              <div style="font-size:.72rem;color:var(--muted);margin-top:4px">Premenné: {meno}, {priezvisko}, {datum}, {telefon}, {email}</div>
+            </div>
+            <div style="margin-top:12px">
+              <button class="btn btn-primary btn-sm" onclick="saveSmsSettings()">Uložiť SMS nastavenia</button>
+              <button class="btn btn-ghost btn-sm" onclick="testSmsConnection()" style="margin-left:8px">Otestovať pripojenie</button>
+            </div>
+            <div id="sms-settings-status"></div>
+          </div>
+        </div>
+
         <!-- Požičovňa — bikes -->
         <div class="settings-section">
           <div class="settings-section-title">🚲 Požičovňa — bicykle</div>
@@ -649,6 +698,30 @@ tr:hover td { background:#fafafa; }
     <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
       <button class="btn btn-ghost" onclick="closeOverlay('overlay-rental')">Zrušiť</button>
       <button class="btn btn-primary" id="rental-save-btn" onclick="saveRentalReservation()">Uložiť</button>
+    </div>
+  </div>
+</div>
+
+<!-- SMS modal -->
+<div class="overlay" id="overlay-sms">
+  <div class="modal" style="max-width:620px">
+    <button class="modal-close" onclick="closeOverlay('overlay-sms')">✕</button>
+    <div class="modal-title" id="sms-modal-title">Odoslať SMS pripomienky</div>
+    <div class="sms-mode-toggle">
+      <button id="sms-mode-individual" class="active" onclick="setSmsMode('individual')">Individuálny čas</button>
+      <button id="sms-mode-common" onclick="setSmsMode('common')">Spoločný čas</button>
+    </div>
+    <div id="sms-common-time" style="display:none;margin-bottom:12px">
+      <label style="font-size:.84rem;font-weight:600">Spoločný dátum a čas odoslania</label>
+      <input type="datetime-local" id="sms-common-datetime" style="width:100%;margin-top:4px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit">
+    </div>
+    <div class="sms-recipients" id="sms-recipients-list"></div>
+    <div class="fsec" style="margin-top:12px">Náhľad SMS</div>
+    <div class="sms-preview" id="sms-preview-text"></div>
+    <div id="sms-send-result"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:18px">
+      <button class="btn btn-ghost" onclick="closeOverlay('overlay-sms')">Zrušiť</button>
+      <button class="btn btn-primary" id="sms-send-btn" onclick="executeSmsAll()">📱 Odoslať</button>
     </div>
   </div>
 </div>
@@ -723,6 +796,19 @@ let bikes      = [];
 let documents  = {};
 let servisBlacklist = [];
 let rentalBlacklist = [];
+
+// SMS BulkGate
+const KEY_BULKGATE_ID    = 'bulkgateAppId';
+const KEY_BULKGATE_TOKEN = 'bulkgateToken';
+const KEY_SMS_TEMPLATE   = 'smsTemplate';
+const KEY_SMS_SENT       = 'smsSent';
+const DEFAULT_SMS_TEMPLATE = 'Dobrý deň p.{priezvisko}, pripomíname Vám termín servisu bicykla dňa {datum} v Jericho Bike. Tešíme sa na Vás!';
+let bulkgateId    = localStorage.getItem(KEY_BULKGATE_ID) || '37374';
+let bulkgateToken = localStorage.getItem(KEY_BULKGATE_TOKEN) || '';
+let smsTemplate   = localStorage.getItem(KEY_SMS_TEMPLATE) || DEFAULT_SMS_TEMPLATE;
+let smsSent       = JSON.parse(localStorage.getItem(KEY_SMS_SENT) || '{}');
+let smsChecked    = new Set();
+let smsMode       = 'individual';
 
 let editingServisId = null;
 let editingRentalId = null;
@@ -1280,6 +1366,186 @@ async function saveScDaySlots() {
 }
 
 // ═══════════════════════════════════════════════════════════════════
+//  SMS — BULKGATE
+// ═══════════════════════════════════════════════════════════════════
+
+function saveSmsSettings() {
+  bulkgateId    = document.getElementById('cfg-bulkgate-id').value.trim();
+  bulkgateToken = document.getElementById('cfg-bulkgate-token').value.trim();
+  smsTemplate   = document.getElementById('cfg-sms-template').value.trim() || DEFAULT_SMS_TEMPLATE;
+  localStorage.setItem(KEY_BULKGATE_ID, bulkgateId);
+  localStorage.setItem(KEY_BULKGATE_TOKEN, bulkgateToken);
+  localStorage.setItem(KEY_SMS_TEMPLATE, smsTemplate);
+  alert('SMS nastavenia boli uložené.');
+}
+
+async function testSmsConnection() {
+  const st = document.getElementById('sms-settings-status');
+  if (!bulkgateId || !bulkgateToken) { st.innerHTML='<div class="sms-result err">Vyplňte Application ID a Token.</div>'; return; }
+  st.innerHTML='<div class="sms-result" style="background:#fef9c3;color:#854d0e">Testujem pripojenie...</div>';
+  try {
+    const resp = await fetch('https://portal.bulkgate.com/api/1.0/simple/transactional', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ application_id:bulkgateId, application_token:bulkgateToken, number:'421000000000', text:'test', country:'sk' })
+    });
+    const json = await resp.json();
+    if (json.data) st.innerHTML='<div class="sms-result ok">Pripojenie OK — BulkGate API funguje.</div>';
+    else st.innerHTML='<div class="sms-result err">Chyba: '+(json.error||'Neznáma chyba')+'</div>';
+  } catch(e) { st.innerHTML='<div class="sms-result err">Chyba pripojenia: '+e.message+'</div>'; }
+}
+
+function buildSmsText(r) {
+  return smsTemplate
+    .replace(/\{meno\}/g, r.meno||'')
+    .replace(/\{priezvisko\}/g, r.priezvisko||'')
+    .replace(/\{datum\}/g, fmtDate(r.datum))
+    .replace(/\{telefon\}/g, r.telefon||'')
+    .replace(/\{email\}/g, r.email||'');
+}
+
+function getDefaultSmsDatetime(datumServisu) {
+  const d = new Date(datumServisu + 'T18:00:00');
+  d.setDate(d.getDate() - 1);
+  const pad = n => String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+function toggleAllSmsChecks(checked) {
+  const sorted = [...servisRes].filter(r => r.datum >= todayStr);
+  smsChecked.clear();
+  if (checked) sorted.forEach(r => smsChecked.add(r.id));
+  document.querySelectorAll('.sms-row-check').forEach(cb => { if (!cb.closest('tr').style.opacity || parseFloat(cb.closest('tr').style.opacity) > 0.6) cb.checked = checked; });
+  updateSmsToolbar();
+}
+
+function toggleSmsCheck(id, checked) {
+  if (checked) smsChecked.add(id); else smsChecked.delete(id);
+  updateSmsToolbar();
+}
+
+function updateSmsToolbar() {
+  const tb = document.getElementById('sms-toolbar');
+  const cnt = document.getElementById('sms-selected-count');
+  if (smsChecked.size > 0) {
+    tb.style.display = 'flex';
+    cnt.textContent = smsChecked.size + ' označených';
+  } else {
+    tb.style.display = 'none';
+  }
+}
+
+function setSmsMode(mode) {
+  smsMode = mode;
+  document.getElementById('sms-mode-individual').className = mode==='individual' ? 'active' : '';
+  document.getElementById('sms-mode-common').className = mode==='common' ? 'active' : '';
+  document.getElementById('sms-common-time').style.display = mode==='common' ? 'block' : 'none';
+  renderSmsRecipients();
+}
+
+function openSmsModal(singleId) {
+  if (!bulkgateToken) { alert('Najprv nastavte BulkGate API token v Nastaveniach.'); return; }
+  let ids = singleId ? [singleId] : [...smsChecked];
+  if (!ids.length) return;
+  smsMode = 'individual';
+  document.getElementById('sms-mode-individual').className = 'active';
+  document.getElementById('sms-mode-common').className = '';
+  document.getElementById('sms-common-time').style.display = 'none';
+  document.getElementById('sms-send-result').innerHTML = '';
+  document.getElementById('sms-send-btn').disabled = false;
+  document.getElementById('sms-send-btn').textContent = '📱 Odoslať';
+  document.getElementById('sms-modal-title').textContent = ids.length === 1 ? 'Odoslať SMS pripomienku' : 'Odoslať SMS pripomienky ('+ids.length+')';
+  // store ids on modal
+  document.getElementById('overlay-sms').dataset.ids = JSON.stringify(ids);
+  // default common time
+  const firstR = servisRes.find(r => r.id === ids[0]);
+  if (firstR) document.getElementById('sms-common-datetime').value = getDefaultSmsDatetime(firstR.datum);
+  renderSmsRecipients();
+  openOverlay('overlay-sms');
+}
+
+function renderSmsRecipients() {
+  const ids = JSON.parse(document.getElementById('overlay-sms').dataset.ids || '[]');
+  const list = document.getElementById('sms-recipients-list');
+  list.innerHTML = '';
+  let previewText = '';
+  ids.forEach(id => {
+    const r = servisRes.find(x => x.id === id);
+    if (!r) return;
+    const defDt = getDefaultSmsDatetime(r.datum);
+    const row = document.createElement('div');
+    row.className = 'sms-recip-row';
+    row.innerHTML =
+      '<div class="sms-recip-info">' +
+        '<div class="sms-recip-name">'+escHtml(r.meno)+' '+escHtml(r.priezvisko)+'</div>' +
+        '<div class="sms-recip-phone">'+escHtml(r.telefon||'—')+' · Servis: '+fmtDate(r.datum)+'</div>' +
+      '</div>' +
+      (smsMode==='individual' ? '<input type="datetime-local" class="sms-indiv-dt" data-id="'+id+'" value="'+defDt+'" style="padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:.8rem">' : '') +
+      (smsSent[id] ? '<span class="sms-badge sent">✓ odoslaná</span>' : '');
+    list.appendChild(row);
+    if (!previewText) previewText = buildSmsText(r);
+  });
+  document.getElementById('sms-preview-text').textContent = previewText || '';
+}
+
+async function sendBulkgateSMS(phone, text, scheduleIso) {
+  const body = {
+    application_id: bulkgateId,
+    application_token: bulkgateToken,
+    number: phone,
+    text: text,
+    unicode: 'yes',
+    country: 'sk'
+  };
+  if (scheduleIso) {
+    const ts = Math.floor(new Date(scheduleIso).getTime() / 1000);
+    if (ts > Math.floor(Date.now()/1000) + 60) body.schedule = ts;
+  }
+  const resp = await fetch('https://portal.bulkgate.com/api/1.0/simple/transactional', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  return await resp.json();
+}
+
+async function executeSmsAll() {
+  const ids = JSON.parse(document.getElementById('overlay-sms').dataset.ids || '[]');
+  if (!ids.length) return;
+  const btn = document.getElementById('sms-send-btn');
+  const res = document.getElementById('sms-send-result');
+  btn.disabled = true; btn.textContent = 'Odosielam...';
+  res.innerHTML = '';
+  let ok = 0, fail = 0;
+  const commonDt = smsMode==='common' ? document.getElementById('sms-common-datetime').value : null;
+
+  for (const id of ids) {
+    const r = servisRes.find(x => x.id === id);
+    if (!r || !r.telefon) { fail++; continue; }
+    const text = buildSmsText(r);
+    let scheduleDt = commonDt;
+    if (smsMode==='individual') {
+      const inp = document.querySelector('.sms-indiv-dt[data-id="'+id+'"]');
+      scheduleDt = inp ? inp.value : null;
+    }
+    try {
+      const result = await sendBulkgateSMS(r.telefon, text, scheduleDt);
+      if (result.data && result.data.status === 'accepted') {
+        ok++;
+        smsSent[id] = { time: new Date().toISOString(), scheduled: scheduleDt || 'now' };
+        localStorage.setItem(KEY_SMS_SENT, JSON.stringify(smsSent));
+      } else { fail++; }
+    } catch(e) { fail++; }
+  }
+
+  if (ok > 0 && fail === 0) res.innerHTML = '<div class="sms-result ok">Úspešne odoslaných: '+ok+' SMS</div>';
+  else if (ok > 0) res.innerHTML = '<div class="sms-result ok">Odoslaných: '+ok+', chyby: '+fail+'</div>';
+  else res.innerHTML = '<div class="sms-result err">Chyba pri odosielaní SMS. Skontrolujte BulkGate nastavenia.</div>';
+
+  btn.disabled = false; btn.textContent = '📱 Odoslať';
+  renderServisTable();
+}
+
+// ═══════════════════════════════════════════════════════════════════
 //  SERVIS — TABUĽKA
 // ═══════════════════════════════════════════════════════════════════
 
@@ -1287,28 +1553,41 @@ function renderServisTable() {
   const tbody = document.getElementById('servis-tbody');
   tbody.innerHTML = '';
   if (!servisRes.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:32px">Žiadne rezervácie</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Žiadne rezervácie</td></tr>';
     return;
   }
   const sorted = [...servisRes].sort((a,b) => a.datum<b.datum?-1:a.datum>b.datum?1:0);
   sorted.forEach((r,i) => {
     const bike    = [r.znacka, r.model, r.rokVyroby?'('+r.rokVyroby+')':''].filter(Boolean).join(' ');
     const isPast  = r.datum < todayStr;
+    const sent    = smsSent[r.id];
     const tr      = document.createElement('tr');
     tr.style.opacity = isPast ? '0.55' : '1';
     tr.innerHTML =
+      '<td><input type="checkbox" class="sms-check sms-row-check" '+(smsChecked.has(r.id)?'checked':'')+' onchange="toggleSmsCheck(\''+r.id+'\',this.checked)"'+(isPast?' disabled':'')+'>'+
+      '</td>' +
       '<td><span class="badge badge-red">#'+(i+1)+'</span></td>' +
       '<td><strong>'+fmtDate(r.datum)+'</strong><br><span style="font-size:.72rem;color:var(--muted)">'+getDayName(r.datum)+'</span></td>' +
       '<td><strong>'+escHtml(r.meno)+' '+escHtml(r.priezvisko)+'</strong></td>' +
       '<td style="font-size:.8rem">'+escHtml(r.telefon||'—')+'<br><span style="color:var(--muted)">'+escHtml(r.email||'')+'</span></td>' +
       '<td style="font-size:.8rem">'+escHtml(bike||'—')+'</td>' +
       '<td style="font-size:.8rem;max-width:200px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escHtml(r.popis||'')+'">'+escHtml(r.popis||'—')+'</div></td>' +
+      '<td style="text-align:center">' +
+        (sent
+          ? '<span class="sms-badge sent" title="SMS odoslaná '+(sent.time?new Date(sent.time).toLocaleString('sk-SK'):'')+'">✓</span>'
+          : (isPast ? '<span style="color:var(--muted)">—</span>' : '<button class="btn btn-ghost btn-sm" onclick="openSmsModal(\''+r.id+'\')" title="Odoslať SMS">📱</button>')
+        ) +
+      '</td>' +
       '<td><div style="display:flex;gap:5px">'+
         '<button class="btn btn-ghost btn-sm" onclick="openServisModal(\''+r.id+'\')">✏️</button>'+
         '<button class="btn btn-red btn-sm" onclick="deleteServisRes(\''+r.id+'\')">🗑</button>'+
       '</div></td>';
     tbody.appendChild(tr);
   });
+  // update select-all state
+  const allCheck = document.getElementById('sms-check-all');
+  if (allCheck) allCheck.checked = false;
+  updateSmsToolbar();
 }
 
 function sfToggleBike2() {
@@ -1778,6 +2057,10 @@ function renderSettingsPanel() {
   document.getElementById('scfg-admin-email').value = servisAdminEmail;
   document.getElementById('scfg-slots').value = servisSlotsPerDay;
   renderBlockedList();
+  // SMS BulkGate
+  document.getElementById('cfg-bulkgate-id').value = bulkgateId;
+  document.getElementById('cfg-bulkgate-token').value = bulkgateToken;
+  document.getElementById('cfg-sms-template').value = smsTemplate;
   // Bikes admin
   renderBikesAdmin();
 }
