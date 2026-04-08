@@ -1426,11 +1426,17 @@ async function testSmsConnection() {
   } catch(e) { st.innerHTML='<div class="sms-result err">Chyba: '+e.message+'</div>'; }
 }
 
+function fmtDateSms(d) {
+  if (!d) return '';
+  const dt = new Date(d + 'T12:00:00');
+  return dt.getDate() + '.' + (dt.getMonth()+1) + '.' + dt.getFullYear();
+}
+
 function buildSmsText(r) {
   return smsTemplate
     .replace(/\{meno\}/g, r.meno||'')
     .replace(/\{priezvisko\}/g, r.priezvisko||'')
-    .replace(/\{datum\}/g, fmtDate(r.datum))
+    .replace(/\{datum\}/g, fmtDateSms(r.datum))
     .replace(/\{telefon\}/g, r.telefon||'')
     .replace(/\{email\}/g, r.email||'');
 }
