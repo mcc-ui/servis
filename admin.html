@@ -1500,6 +1500,7 @@ function renderSmsRecipients() {
 
 async function sendBulkgateSMS(phone, text, scheduleIso, reservationId) {
   if (!SERVIS_URL) throw new Error('Servis API URL nie je nastavená');
+  if (!bulkgateToken) throw new Error('BulkGate token nie je nastavený');
   const smsData = {
     application_id: bulkgateId,
     application_token: bulkgateToken,
@@ -1515,8 +1516,15 @@ async function sendBulkgateSMS(phone, text, scheduleIso, reservationId) {
     const ts = Math.floor(new Date(scheduleIso).getTime() / 1000);
     if (ts > Math.floor(Date.now()/1000) + 60) smsData.schedule = ts;
   }
-  const result = await apiCall(SERVIS_URL, 'sendSms', { smsData });
-  return result;
+  console.log('SMS: odosielam na', phone, 'cez', SERVIS_URL);
+  try {
+    const result = await apiCall(SERVIS_URL, 'sendSms', { smsData });
+    console.log('SMS: odpoveď:', result);
+    return result;
+  } catch(e) {
+    console.error('SMS: chyba apiCall:', e);
+    throw e;
+  }
 }
 
 async function executeSmsAll() {
@@ -1526,7 +1534,7 @@ async function executeSmsAll() {
   const res = document.getElementById('sms-send-result');
   btn.disabled = true; btn.textContent = 'Odosielam...';
   res.innerHTML = '';
-  let ok = 0, fail = 0;
+  let ok = 0, fail = 0, lastErr = '';
   const commonDt = smsMode==='common' ? document.getElementById('sms-common-datetime').value : null;
 
   for (const id of ids) {
@@ -1545,12 +1553,12 @@ async function executeSmsAll() {
         smsSent[id] = { time: new Date().toISOString(), scheduled: scheduleDt || 'now', sms_id: result.sms_id || '' };
         localStorage.setItem(KEY_SMS_SENT, JSON.stringify(smsSent));
       } else { fail++; }
-    } catch(e) { fail++; }
+    } catch(e) { fail++; lastErr = e.message; console.error('SMS chyba pre '+r.telefon+':', e); }
   }
 
   if (ok > 0 && fail === 0) res.innerHTML = '<div class="sms-result ok">Úspešne odoslaných: '+ok+' SMS</div>';
   else if (ok > 0) res.innerHTML = '<div class="sms-result ok">Odoslaných: '+ok+', chyby: '+fail+'</div>';
-  else res.innerHTML = '<div class="sms-result err">Chyba pri odosielaní SMS. Skontrolujte BulkGate nastavenia.</div>';
+  else res.innerHTML = '<div class="sms-result err">Chyba: '+(lastErr||'Neznáma chyba')+' — Skontrolujte BulkGate nastavenia a Apps Script deployment.</div>';
 
   btn.disabled = false; btn.textContent = '📱 Odoslať';
   renderServisTable();
