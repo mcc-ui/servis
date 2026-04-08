@@ -167,6 +167,17 @@ tr:hover td { background:#fafafa; }
 .modal-title { font-size:1.05rem;font-weight:700;color:var(--dark);margin-bottom:20px; }
 
 /* ── SMS ── */
+/* ── FILTER BAR ── */
+.filter-bar { display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--bg);border-radius:var(--radius);border:1px solid var(--border); }
+.filter-bar input { padding:6px 10px;border:1px solid var(--border);border-radius:var(--radius);font-family:inherit;font-size:.84rem;outline:none; }
+.filter-bar input:focus { border-color:var(--accent); }
+.filter-bar .filter-input { width:160px; }
+.filter-bar .filter-date { width:145px; }
+.filter-toggle { display:inline-flex;align-items:center;gap:5px;font-size:.82rem;color:var(--dark);cursor:pointer;user-select:none; }
+.filter-toggle input[type="checkbox"] { accent-color:var(--accent);width:15px;height:15px;cursor:pointer; }
+.filter-clear { background:none;border:none;color:var(--muted);font-size:.78rem;cursor:pointer;padding:4px 8px;font-family:inherit; }
+.filter-clear:hover { color:var(--accent); }
+
 .sms-badge { display:inline-flex;align-items:center;gap:3px;font-size:.72rem;padding:2px 7px;border-radius:999px;font-weight:600; }
 .sms-badge.sent { background:#dbeafe;color:#1e40af; }
 .sms-badge.delivered { background:#dcfce7;color:#166534; }
@@ -364,11 +375,21 @@ tr:hover td { background:#fafafa; }
                 <button class="btn btn-dark btn-sm" id="btn-sms-bulk" onclick="openSmsModal()">📱 Odoslať SMS</button>
                 <span class="sms-count" id="sms-selected-count"></span>
               </div>
-              <button class="btn btn-ghost btn-sm" onclick="refreshSmsStatuses()" title="Obnoviť stav doručenia SMS">🔄 SMS stav</button>
+              <button class="btn btn-ghost btn-sm" onclick="refreshSmsStatuses(true)" title="Obnoviť stav doručenia SMS">🔄 SMS stav</button>
             </div>
             <div style="margin-left:auto">
               <button class="btn btn-primary btn-sm" onclick="openServisModal(null)">+ Pridať</button>
             </div>
+          </div>
+          <div class="filter-bar" id="servis-filter-bar">
+            <input type="text" class="filter-input" id="sf-filter-name" placeholder="Priezvisko..." oninput="renderServisTable()">
+            <input type="text" class="filter-input" id="sf-filter-phone" placeholder="Tel. číslo..." oninput="renderServisTable()">
+            <input type="date" class="filter-date" id="sf-filter-date-from" title="Dátum od" onchange="renderServisTable()">
+            <span style="color:var(--muted);font-size:.8rem">—</span>
+            <input type="date" class="filter-date" id="sf-filter-date-to" title="Dátum do" onchange="renderServisTable()">
+            <label class="filter-toggle"><input type="checkbox" id="sf-filter-future" onchange="renderServisTable()" checked> Len budúce</label>
+            <button class="filter-clear" onclick="clearServisFilters()">✕ Zrušiť filtre</button>
+            <span style="font-size:.78rem;color:var(--muted);margin-left:auto" id="sf-filter-count"></span>
           </div>
           <div class="card">
             <div class="table-wrap">
@@ -1564,8 +1585,8 @@ async function executeSmsAll() {
   renderServisTable();
 }
 
-async function refreshSmsStatuses() {
-  if (!SERVIS_URL) return;
+async function refreshSmsStatuses(showAlert) {
+  if (!SERVIS_URL) { if(showAlert) alert('Servis API URL nie je nastavená.'); return; }
   // Zozbieraj sms_id pre odoslané ale nedoručené SMS
   const pending = {};
   for (const [resId, info] of Object.entries(smsSent)) {
@@ -1573,20 +1594,37 @@ async function refreshSmsStatuses() {
       pending[resId] = info.sms_id;
     }
   }
-  if (!Object.keys(pending).length) return;
+  console.log('SMS refresh: pending IDs:', pending);
+  console.log('SMS refresh: smsSent:', JSON.stringify(smsSent));
+  if (!Object.keys(pending).length) {
+    if (showAlert) alert('Žiadne SMS na kontrolu (všetky sú doručené, alebo nemajú sms_id).');
+    return;
+  }
+  // Vizuálna odozva na tlačidlo
+  const btn = document.querySelector('[onclick*="refreshSmsStatuses"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Načítavam...'; }
   try {
     const result = await apiCall(SERVIS_URL, 'getSmsStatuses', { smsIds: pending });
+    console.log('SMS refresh: result:', result);
+    let updated = 0;
     if (result && result.statuses) {
       for (const [resId, status] of Object.entries(result.statuses)) {
-        if (smsSent[resId]) {
-          smsSent[resId].delivery = status.delivery || smsSent[resId].delivery;
-          smsSent[resId].deliveryTime = status.deliveryTime || smsSent[resId].deliveryTime;
+        if (smsSent[resId] && status.delivery && status.delivery !== smsSent[resId].delivery) {
+          smsSent[resId].delivery = status.delivery;
+          smsSent[resId].deliveryTime = status.deliveryTime || '';
+          updated++;
         }
       }
       localStorage.setItem(KEY_SMS_SENT, JSON.stringify(smsSent));
       renderServisTable();
     }
-  } catch(e) { console.warn('SMS status refresh error:', e.message); }
+    if (showAlert) alert(updated > 0 ? 'Aktualizovaných: ' + updated + ' SMS' : 'Žiadne nové zmeny stavu.');
+  } catch(e) {
+    console.error('SMS status refresh error:', e);
+    if (showAlert) alert('Chyba: ' + e.message);
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = '🔄 SMS stav'; }
+  }
 }
 
 function getSmsStatusBadge(info) {
@@ -1606,15 +1644,67 @@ function getSmsStatusBadge(info) {
 //  SERVIS — TABUĽKA
 // ═══════════════════════════════════════════════════════════════════
 
+function getServisFilters() {
+  return {
+    name:     (document.getElementById('sf-filter-name')     || {}).value || '',
+    phone:    (document.getElementById('sf-filter-phone')    || {}).value || '',
+    dateFrom: (document.getElementById('sf-filter-date-from')|| {}).value || '',
+    dateTo:   (document.getElementById('sf-filter-date-to')  || {}).value || '',
+    future:   (document.getElementById('sf-filter-future')   || {}).checked || false
+  };
+}
+
+function clearServisFilters() {
+  document.getElementById('sf-filter-name').value = '';
+  document.getElementById('sf-filter-phone').value = '';
+  document.getElementById('sf-filter-date-from').value = '';
+  document.getElementById('sf-filter-date-to').value = '';
+  document.getElementById('sf-filter-future').checked = false;
+  renderServisTable();
+}
+
 function renderServisTable() {
   const tbody = document.getElementById('servis-tbody');
   tbody.innerHTML = '';
   if (!servisRes.length) {
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Žiadne rezervácie</td></tr>';
+    document.getElementById('sf-filter-count').textContent = '';
     return;
   }
+
+  const f = getServisFilters();
+  const nameQ  = f.name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const phoneQ = f.phone.replace(/\s/g,'');
+
   const sorted = [...servisRes].sort((a,b) => a.datum<b.datum?-1:a.datum>b.datum?1:0);
-  sorted.forEach((r,i) => {
+
+  let filtered = sorted.filter(r => {
+    // Len budúce
+    if (f.future && r.datum < todayStr) return false;
+    // Priezvisko
+    if (nameQ) {
+      const full = ((r.meno||'')+' '+(r.priezvisko||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if (!full.includes(nameQ)) return false;
+    }
+    // Telefón
+    if (phoneQ && !(r.telefon||'').replace(/\s/g,'').includes(phoneQ)) return false;
+    // Dátum od
+    if (f.dateFrom && r.datum < f.dateFrom) return false;
+    // Dátum do
+    if (f.dateTo && r.datum > f.dateTo) return false;
+    return true;
+  });
+
+  // Počítadlo
+  const countEl = document.getElementById('sf-filter-count');
+  if (countEl) countEl.textContent = filtered.length + ' / ' + servisRes.length + ' záznamov';
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:32px">Žiadne výsledky pre zadaný filter</td></tr>';
+    return;
+  }
+
+  filtered.forEach((r,i) => {
     const bike    = [r.znacka, r.model, r.rokVyroby?'('+r.rokVyroby+')':''].filter(Boolean).join(' ');
     const isPast  = r.datum < todayStr;
     const sent    = smsSent[r.id];
