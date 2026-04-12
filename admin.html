@@ -1575,11 +1575,11 @@ async function executeSmsAll() {
     }
     try {
       const result = await sendBulkgateSMS(r.telefon, text, scheduleDt, id);
-      if (result && result.status === 'accepted') {
+      if (result && (result.status === 'accepted' || result.status === 'scheduled')) {
         ok++;
-        smsSent[id] = { time: new Date().toISOString(), scheduled: scheduleDt || 'now', sms_id: result.sms_id || '' };
+        smsSent[id] = { time: new Date().toISOString(), scheduled: scheduleDt || 'now', sms_id: result.sms_id || '', delivery: result.status };
         localStorage.setItem(KEY_SMS_SENT, JSON.stringify(smsSent));
-      } else { fail++; }
+      } else { fail++; lastErr = 'BulkGate vrátil stav: ' + (result ? result.status || JSON.stringify(result) : 'prázdna odpoveď'); }
     } catch(e) { fail++; lastErr = e.message; console.error('SMS chyba pre '+r.telefon+':', e); }
   }
 
@@ -1636,12 +1636,12 @@ async function refreshSmsStatuses(showAlert) {
 function getSmsStatusBadge(info) {
   if (!info) return '';
   const d = info.delivery;
-  if (d === 'delivered') return '<span class="sms-badge delivered" title="Doručená '+( info.deliveryTime||'')+'">✓ doručená</span>';
+  if (d === 'delivered') return '<span class="sms-badge delivered" title="Doručená '+(info.deliveryTime||'')+'">✓ doručená</span>';
   if (d === 'not_delivered') return '<span class="sms-badge failed" title="Nedoručená">✗ nedoručená</span>';
   if (d === 'unavailable') return '<span class="sms-badge failed" title="Nedostupný">✗ nedostupný</span>';
-  if (info.scheduled && info.scheduled !== 'now') {
+  if (d === 'scheduled' || (info.scheduled && info.scheduled !== 'now')) {
     const schedDt = new Date(info.scheduled);
-    if (schedDt > new Date()) return '<span class="sms-badge scheduled" title="Naplánovaná na '+schedDt.toLocaleString('sk-SK')+'">⏱ naplánovaná</span>';
+    if (d === 'scheduled' || schedDt > new Date()) return '<span class="sms-badge scheduled" title="Naplánovaná na '+schedDt.toLocaleString('sk-SK')+'">⏱ naplánovaná</span>';
   }
   return '<span class="sms-badge sent" title="Odoslaná '+(info.time ? new Date(info.time).toLocaleString('sk-SK'):'')+'">↗ odoslaná</span>';
 }
