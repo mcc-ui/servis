@@ -1633,17 +1633,26 @@ async function refreshSmsStatuses(showAlert) {
   }
 }
 
-function getSmsStatusBadge(info) {
+function getSmsStatusBadge(info, resId) {
   if (!info) return '';
   const d = info.delivery;
   if (d === 'delivered') return '<span class="sms-badge delivered" title="Doručená '+(info.deliveryTime||'')+'">✓ doručená</span>';
-  if (d === 'not_delivered') return '<span class="sms-badge failed" title="Nedoručená">✗ nedoručená</span>';
-  if (d === 'unavailable') return '<span class="sms-badge failed" title="Nedostupný">✗ nedostupný</span>';
+  if (d === 'not_delivered') return '<span class="sms-badge failed" title="Nedoručená — klikni pre manuálne označenie" style="cursor:pointer" onclick="markSmsDelivered(\''+resId+'\')">✗ nedoručená</span>';
+  if (d === 'unavailable') return '<span class="sms-badge failed" title="Nedostupný — klikni pre manuálne označenie" style="cursor:pointer" onclick="markSmsDelivered(\''+resId+'\')">✗ nedostupný</span>';
   if (d === 'scheduled' || (info.scheduled && info.scheduled !== 'now')) {
     const schedDt = new Date(info.scheduled);
-    if (d === 'scheduled' || schedDt > new Date()) return '<span class="sms-badge scheduled" title="Naplánovaná na '+schedDt.toLocaleString('sk-SK')+'">⏱ naplánovaná</span>';
+    if (d === 'scheduled' || schedDt > new Date()) return '<span class="sms-badge scheduled" title="Naplánovaná na '+schedDt.toLocaleString('sk-SK')+' — klikni pre manuálne označenie ako doručenú" style="cursor:pointer" onclick="markSmsDelivered(\''+resId+'\')">⏱ naplánovaná</span>';
   }
-  return '<span class="sms-badge sent" title="Odoslaná '+(info.time ? new Date(info.time).toLocaleString('sk-SK'):'')+'">↗ odoslaná</span>';
+  return '<span class="sms-badge sent" title="Odoslaná '+(info.time ? new Date(info.time).toLocaleString('sk-SK'):'')+' — klikni pre manuálne označenie ako doručenú" style="cursor:pointer" onclick="markSmsDelivered(\''+resId+'\')">↗ odoslaná</span>';
+}
+
+function markSmsDelivered(resId) {
+  if (!smsSent[resId]) return;
+  if (!confirm('Označiť SMS ako doručenú?')) return;
+  smsSent[resId].delivery = 'delivered';
+  smsSent[resId].deliveryTime = new Date().toISOString();
+  localStorage.setItem(KEY_SMS_SENT, JSON.stringify(smsSent));
+  renderServisTable();
 }
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1727,7 +1736,7 @@ function renderServisTable() {
       '<td style="font-size:.8rem;max-width:200px"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+escHtml(r.popis||'')+'">'+escHtml(r.popis||'—')+'</div></td>' +
       '<td style="text-align:center">' +
         (sent
-          ? getSmsStatusBadge(sent)
+          ? getSmsStatusBadge(sent, r.id)
           : (isPast ? '<span style="color:var(--muted)">—</span>' : '<button class="btn btn-ghost btn-sm" onclick="openSmsModal(\''+r.id+'\')" title="Odoslať SMS">📱</button>')
         ) +
       '</td>' +
